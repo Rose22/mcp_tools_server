@@ -96,17 +96,6 @@ def register_mcp(mcp):
             return "diagnostic info not supported for this OS yet"
 
     @mcp.tool()
-    def get_network_interfaces() -> list:
-        """returns information about the network interfaces on user's PC"""
-
-        if OS == "linux":
-            return utils.sh_exec("ip addr")
-        elif OS == "windows":
-            return utils.sh_exec("ipconfig")
-        elif OS == "darwin":
-            return utils.sh_exec("ifconfig")
-
-    @mcp.tool()
     def get_disk_usage() -> list:
         """returns information about disk space usage"""
 

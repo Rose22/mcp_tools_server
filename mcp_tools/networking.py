@@ -1,13 +1,34 @@
-import requests
+import platform
+import shutil
 import utils
+
+OS = platform.system().lower()
 
 def register_mcp(mcp):
     ### --- networking ---
     @mcp.tool()
+    def get_network_info() -> list:
+        """returns information about the network interfaces on user's PC"""
+
+        if OS == "linux":
+            if shutil.which("nmcli"):
+                # if network manager is installed, that gives better info
+                return utils.sh_exec("nmcli -o")
+            else:
+                return utils.sh_exec("ip addr")
+        elif OS == "windows":
+            return utils.sh_exec("ipconfig")
+        elif OS == "darwin":
+            return utils.sh_exec("ifconfig")
+
+    @mcp.tool()
     def ping(addr: str) -> list:
         """pings a specified IP address or domain"""
 
-        return utils.sh_exec(f"ping -c 1 {addr}")
+        result = utils.sh_exec(f"ping -c 1 {addr}")
+        if len(result) <= 1:
+            return ["could not reach address"]
+        return result 
 
     @mcp.tool()
     def list_open_ports() -> list:
