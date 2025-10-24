@@ -15,3 +15,10 @@ it enables your chosen AI assistant to:
 - transcribe youtube videos
 
 if you use this with a good model, it'll smartly chain multiple actions together, and you can start doing things like asking it to summarize a youtube video and save it to your notes. or to create a recipe with some healthy vegetables and then save it to your recipes. it gets really powerful real fast! 
+
+<img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/c6e03c7c-9bb3-4e95-b049-01fc81588e8b" />
+<img width="544" height="825" alt="image" src="https://github.com/user-attachments/assets/b1b3c079-21ec-4e1a-a714-1feca060fa1f" />
+<img width="494" height="800" alt="image" src="https://github.com/user-attachments/assets/d704164b-2845-474d-825f-d2e3641f87ef" />
+<img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/7f49f7ea-ca74-45e9-9e9e-309e54e34171" />
+<img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/753b9639-00fd-4df1-a151-9feace7d3e00" />
+<img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/ae212531-3e04-42ff-b3ae-22a4c45bcafd" />
