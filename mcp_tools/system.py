@@ -254,12 +254,12 @@ def register_mcp(mcp):
         # only add this to the mcp tools if flatpak is detected
         # (this is done further down outside the function definitions)
 
-        return shutil.exec(f"flatpak install --noninteractive {name}")
+        return utils.sh_exec(f"flatpak install --noninteractive {name}")
 
     def flatpak_remove_package(name: str) -> list:
         """remove a flatpak package"""
 
-        return shutil.exec(f"flatpak uninstall --noninteractive {name}")
+        return utils.sh_exec(f"flatpak uninstall --noninteractive {name}")
 
     # --- systemd services ---
     def list_user_services() -> list:
