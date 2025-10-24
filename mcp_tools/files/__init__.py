@@ -1,5 +1,6 @@
 import os
 import shutil
+import pathlib
 import utils
 
 def register_mcp(mcp):
@@ -17,7 +18,7 @@ def register_mcp(mcp):
 
         result = []
         for file_name in files:
-            file_path = os.path.expanduser(f"{path}/{file_name}")
+            file_path = os.path.expanduser(os.path.join(path, file_name))
             file_ext = os.path.splitext(file_name)[-1]
             file_type = "file" if os.path.isfile(file_path) else "directory"
 
@@ -52,9 +53,10 @@ def register_mcp(mcp):
 
     @mcp.tool()
     def create_dir(path: str) -> list:
-        """creates a directory. takes an absolute path, will automatically create any directories in the path to it (uses mkdir -p internally)"""
+        """creates a directory. takes an absolute path, will automatically create any directories in the path to it"""
 
-        return utils.sh_exec(f"mkdir -p {path}")
+        os.makedirs(path, exist_ok=True)
+        return "success"
 
     @mcp.tool()
     def create_file(path: str, body: str) -> str:
@@ -154,12 +156,12 @@ def register_mcp(mcp):
     def delete_file(path: str) -> str:
         """moves a file to trash. never outright deletes, for safety's sake"""
 
-        trash_path = os.path.expanduser("~/.trash")
+        trash_path = os.path.join(utils.get_data_path(), "trash")
 
         utils.console_log(f"trashing file {path}")
 
         try:
-            shutil.move(path, trash_path+"/"+os.path.basename(path))
+            shutil.move(path, os.path.join(trash_path, os.path.basename(path)))
             return "success"
         except Exception as e:
             return f"error: {e}"
@@ -167,12 +169,12 @@ def register_mcp(mcp):
     @mcp.tool()
     def empty_trash() -> str:
         """empties the trash folder. use with caution!"""
-        trash_path = os.path.expanduser("~/.trash")
+        trash_path = os.path.join(utils.get_data_path(), "trash")
 
         for file in os.listdir(trash_path):
             if os.path.isdir(file):
-                shutil.rmtree(f"{trash_path}/{file}")
+                shutil.rmtree(os.path.join(trash_path, file))
             else:
-                os.remove(f"{trash_path}/{file}")
+                os.remove(os.path.join(trash_path, file))
 
         return "success"

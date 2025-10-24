@@ -5,7 +5,7 @@ def get_root_path():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def get_data_path():
-    path = get_root_path()+"/data"
+    path = os.path.join(get_root_path(), "data")
     if not os.path.exists(path):
         os.mkdir(path)
 
@@ -35,8 +35,9 @@ def sizeof_format(num, suffix="B"):
         num /= 1024.0
     return f"{num:.1f}Yi{suffix}"
 
-def get_dir_size(start_path = '.'):
+def get_dir_size(start_path):
     total_size = 0
+    console_log(f"getting dir size of {start_path}..")
     for dirpath, dirnames, filenames in os.walk(start_path):
         for f in filenames:
             fp = os.path.join(dirpath, f)
