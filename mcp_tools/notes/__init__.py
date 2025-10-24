@@ -278,8 +278,11 @@ please use markdown format!
     # ----------------------
     add_data_type(mcp, "notes", "note")
     add_data_type(mcp, "tasks", "task")
+    add_data_type(mcp, "checklists", "checklist")
     add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
     add_data_type(mcp, "events", "event", additional_instructions="always add a date and time")
+    add_data_type(mcp, "diary", "diary_entry", additional_instructions"this is an entry into user's diary. always name an entry {year}_{month}_{day}. stick to this format for the content: date: {DATE}>\n\n{title}\n{content}")
     add_data_type(mcp, "contacts", "contact")
-    add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="add a description of the bookmark!")
+    add_data_type(mcp, "conversation_logs", "conversation_log")
+    add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="always include the original URL and a description of the bookmark")
     add_data_type(mcp, "recipes", "recipe", additional_instructions="format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions")
