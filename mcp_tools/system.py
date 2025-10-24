@@ -379,9 +379,10 @@ def register_mcp(mcp):
             mcp.tool(get_installed_packages)
             mcp.tool(search_linux_packages)
 
-        if shutil.which("flatpak"):
-            mcp.tool(flatpak_install_package)
-            mcp.tool(flatpak_remove_package)
+        # TODO: broken, needs fix
+        #if shutil.which("flatpak"):
+        #    mcp.tool(flatpak_install_package)
+        #    mcp.tool(flatpak_remove_package)
 
         # add systemd control if systemd is installed
         if shutil.which("systemctl"):
