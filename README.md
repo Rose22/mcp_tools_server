@@ -18,6 +18,27 @@ it enables your chosen AI assistant to:
 
 if you use this with a good model, it'll smartly chain multiple actions together, and you can start doing things like asking it to summarize a youtube video and save it to your notes. or to create a recipe with some healthy vegetables and then save it to your recipes. it gets really powerful real fast! 
 
+# how to install
+
+run this:
+
+```console
+git clone https://github.com/Rose22/mcp_tools_server.git
+cd mcp_tools_server
+python -m venv venv
+python -r requirements.txt
+```
+
+then you will need a way to run a python program in a virtualenv.
+the simplest way is to use this command:
+```console
+/path/to/mcp_tools_server/venv/bin/python /path/to/mcp_tools_server/main.py
+```
+
+add that as the command in your AI user interface of choice. the transport type is stdio, but you can uncomment the relevant lines in `main.py` depending on which type of transport you need
+
+(there will be a proper config system soon..)
+
 <img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/c6e03c7c-9bb3-4e95-b049-01fc81588e8b" />  
 
 <img width="500" height="749" alt="image" src="https://github.com/user-attachments/assets/f4f361d9-d00c-4b81-afdb-04c2a218ab6a" />  
