@@ -145,9 +145,15 @@ def register_mcp(mcp):
 
         result = []
         for file_data in list_of_moves:
+            try:
+                shutil.move(file_data['source_path'], file_data['target_path'])
+                output = "success"
+            except Exception as e:
+                output = f"error: {e}"
+
             result.append([
                     file_data['source_path'],
-                    move_file(file_data['source_path'], file_data['target_path'])
+                    output
             ])
 
         return result

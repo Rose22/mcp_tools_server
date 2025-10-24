@@ -48,6 +48,19 @@ def register_mcp(mcp):
         return "success"
 
     @mcp.tool()
+    def get_note_categories():
+        """returns all categories that notes are grouped under. call this if user wants to see their notes!"""
+        return [category for category in os.listdir(NOTES_PATH) if os.path.isdir(os.path.join(NOTES_PATH, category))]
+
+    @mcp.tool()
+    def get_notes_in_category(category: str) -> list:
+        """returns all notes within a specified category. use get_note_categories() for a list of categories"""
+        try:
+            return [name.replace(".md", "") for name in os.listdir(os.path.join(NOTES_PATH, category))]
+        except Exception as e:
+            return ["error: {e}"]
+
+    @mcp.tool()
     def read_note(name: str, category: str) -> str: 
         """
         reads a note that's already in storage
