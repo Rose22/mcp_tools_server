@@ -48,8 +48,8 @@ def register_mcp(mcp):
 
             data['shell_uname_cmd'] = utils.sh_exec("uname -a")
             data['cpu'] = cpu_info_filtered
+            data["pci_devices"] = utils.sh_exec("lspci"),
             data['system_root'] = os.listdir("/")
-            data['disks'] = utils.sh_exec("lsblk")
 
             try:
                 data['freedesktop_os_release'] = platform.freedesktop_os_release()
@@ -79,14 +79,13 @@ def register_mcp(mcp):
 
     @mcp.tool()
     def get_system_diagnostic_info():
-        """returns useful extra information for diagnosing systems"""
+        """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
 
         if OS not in ("windows", "darwin"):
             return {
                 "mounts": utils.sh_exec("mount"),
                 "usb_devices": utils.sh_exec("lsusb"),
                 "kernel_modules": utils.sh_exec("lsmod"),
-                "pci_devices": utils.sh_exec("lspci"),
                 "usb_devices": utils.sh_exec("lsusb"),
                 "lsirq": utils.sh_exec("lsirq"),
                 "lsipc": utils.sh_exec("lsipc")
