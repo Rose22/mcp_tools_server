@@ -7,6 +7,8 @@ import json
 import utils
 
 OS = platform.system().lower()
+# temporary override
+#OS = "windows"
 
 def register_mcp(mcp):
     # --- information ---
@@ -159,6 +161,17 @@ def register_mcp(mcp):
     # because we check later on if we want to
     # register these tools with the mcp server
     # based on if user's OS is linux
+    def get_linux_distro():
+        try:
+            distro_info = platform.freedesktop_os_release()
+            distro = distro_info['ID']
+            related_distros = distro_info['ID_LIKE'].split(" ") if "ID_LIKE" in distro_info.keys() else []
+
+            return (distro, related_distros)
+
+        except Exception as e:
+            return False
+
     def get_system_diagnostic_info_linux():
         """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
 
@@ -180,6 +193,73 @@ def register_mcp(mcp):
         cmd = cmd.split(" ")[0]
 
         return utils.sh_exec(f"man --pager '' {cmd}")
+
+    def get_user_environment_variables() -> dict:
+        """get environment variables for the user's current session"""
+
+        return dict(os.environ)
+
+    def list_logged_in_users() -> list:
+        """get users currently logged in to user's linux system"""
+
+        return utils.sh_exec("w")
+
+    # --- package management ---
+    def get_installed_packages() -> dict:
+        """get all installed packages on user's linux system"""
+
+        result = {}
+
+        if shutil.which("pacman"):
+            result['system_packages'] = utils.sh_exec("pacman -Qe")
+        elif shutil.which("apt"):
+            # todo
+            pass
+        elif shutil.which("rpm"):
+            # todo
+            pass
+        else:
+            pass
+
+        if shutil.which("flatpak"):
+            result['flatpak_packages'] = utils.sh_exec("flatpak list")
+
+        if shutil.which("snap"):
+            result['snap_packages'] = utils.sh_exec("snap list")
+
+        return result
+
+    def search_linux_packages(query: str) -> dict:
+        """search for a package in user's linux package manager"""
+
+        distro, related_distros = get_linux_distro()
+        result = {}
+
+        if shutil.which("pacman"):
+            result['system_packages'] = utils.sh_exec(f"pacman -Ss {query}")
+        else:
+            result['system_packages'] =  f"package manager for linux distribution {distro} unsupported"
+
+        if shutil.which("flatpak"):
+            result['flatpak_packages'] = utils.sh_exec(f"flatpak search {query}")
+
+        if shutil.which("snap"):
+            result['snap_packages'] = utils.sh_exec(f"snap find {query}")
+
+        return result
+
+    def flatpak_install_package(name: str):
+        """install a flatpak package"""
+
+        # only add this to the mcp tools if flatpak is detected
+        # (this is done further down outside the function definitions)
+
+        return shutil.exec(f"flatpak install --noninteractive {name}")
+
+    def flatpak_remove_package(name: str) -> list:
+        """remove a flatpak package"""
+
+        return shutil.exec(f"flatpak uninstall --noninteractive {name}")
 
     # --- systemd services ---
     def list_user_services() -> list:
@@ -233,6 +313,23 @@ def register_mcp(mcp):
     
        return utils.sh_exec(f"systemctl --user kill {name}")
 
+    def systemd_user_logs() -> list:
+        """returns systemd user level logs (last 1000 lines)"""
+
+        return utils.sh_exec("journalctl --user -b -n1000")
+    def systemd_kernel_logs() -> list:
+        """returns systemd kernel logs (journalctl -k)"""
+
+        return utils.sh_exec("journalctl -k")
+
+    # --- network control ---
+    def turn_network_off():
+        """turns off user's internet"""
+        return utils.sh_exec("nmcli network off")
+    def turn_network_on():
+        """turns on user's internet"""
+        return utils.sh_exec("nmcli network on")
+
     # --- media control ---
     def media_currently_playing() -> list:
         """fetch what media is currently playing on user's device"""
@@ -269,6 +366,23 @@ def register_mcp(mcp):
         mcp.tool(get_system_diagnostic_info_linux, name="get_system_diagnostic_info")
         mcp.tool(fetch_man_page)
 
+        # if using a supported package manager, add package management tools!
+        if (
+            shutil.which("pacman") or
+            shutil.which("apt") or
+            shutil.which("rpm") or
+
+            shutil.which("flatpak") or
+            shutil.which("snap")
+        ):
+
+            mcp.tool(get_installed_packages)
+            mcp.tool(search_linux_packages)
+
+        if shutil.which("flatpak"):
+            mcp.tool(flatpak_install_package)
+            mcp.tool(flatpak_remove_package)
+
         # add systemd control if systemd is installed
         if shutil.which("systemctl"):
             mcp.tool(list_user_services)
@@ -279,6 +393,8 @@ def register_mcp(mcp):
             mcp.tool(restart_user_service)
             mcp.tool(stop_user_service)
             mcp.tool(kill_user_service)
+            mcp.tool(systemd_user_logs)
+            mcp.tool(systemd_kernel_logs)
 
         # only add player controls if user's os is linux
         # this is temporary until i figure out how to
