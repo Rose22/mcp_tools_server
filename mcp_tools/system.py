@@ -34,7 +34,7 @@ def register_mcp(mcp):
         }
 
         if OS == "linux":
-            data['environment_vars'] = os.environ
+            data['environment_vars'] = dict(os.environ)
 
             cpu_info_filtered = {}
 
