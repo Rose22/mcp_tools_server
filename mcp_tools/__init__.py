@@ -1,4 +1,4 @@
-from mcp_tools import system, files, reader, networking, notes
+from mcp_tools import system, files, reader, networking, markdown_db
 
 def register_mcp(mcp):
     """
@@ -8,4 +8,4 @@ def register_mcp(mcp):
     files.register_mcp(mcp)
     reader.register_mcp(mcp)
     networking.register_mcp(mcp)
-    notes.register_mcp(mcp)
+    markdown_db.register_mcp(mcp)
