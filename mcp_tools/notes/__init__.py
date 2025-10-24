@@ -278,6 +278,7 @@ please use markdown format!
     # ----------------------
     add_data_type(mcp, "notes", "note")
     add_data_type(mcp, "tasks", "task")
+    add_data_type(mcp, "ideas", "idea")
     add_data_type(mcp, "checklists", "checklist")
     add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
     add_data_type(mcp, "events", "event", additional_instructions="always add a date and time")
