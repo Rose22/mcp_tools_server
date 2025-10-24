@@ -11,7 +11,7 @@ def filter_note_path(name, category):
     if not os.path.exists(os.path.join(NOTES_PATH, category)):
         raise Exception("invalid category")
 
-    if not os.path.exists(os.path.join(NOTES_PATH, category, name, ".md")):
+    if not os.path.exists(os.path.join(NOTES_PATH, category, name+".md")):
         raise Exception("note does not exist")
 
     return (name, category)
@@ -36,7 +36,7 @@ def register_mcp(mcp):
         if not os.path.exists(os.path.join(NOTES_PATH, category)):
             os.mkdir(os.path.join(NOTES_PATH, category))
 
-        note_path = os.path.join(NOTES_PATH, category, name, ".md")
+        note_path = os.path.join(NOTES_PATH, category, name+".md")
 
         if os.path.exists(note_path):
             return "note already exists! you should read it and then use edit_note() instead."
@@ -56,7 +56,7 @@ def register_mcp(mcp):
         utils.console_log(f"reading note {name}")
 
         name, category = filter_note_path(name, category)
-        return open(os.path.join(NOTES_PATH, category, name, ".md"), 'r').read()
+        return open(os.path.join(NOTES_PATH, category, name+".md"), 'r').read()
 
     @mcp.tool()
     def edit_note(name: str, category: str, body: str) -> str:
@@ -69,7 +69,7 @@ def register_mcp(mcp):
 
         name, category = filter_note_path(name, category)
 
-        with open(os.path.join(NOTES_PATH, category, name, ".md"), 'w') as f:
+        with open(os.path.join(NOTES_PATH, category, name+".md"), 'w') as f:
             f.write(body)
             f.write("\n")
         
@@ -82,7 +82,7 @@ def register_mcp(mcp):
         utils.console_log(f"deleting note {name}")
 
         name, category = filter_note_path(name, category)
-        os.remove(os.path.join(NOTES_PATH, category, name, ".md"))
+        os.remove(os.path.join(NOTES_PATH, category, name+".md"))
         return "success"
 
     @mcp.tool()

@@ -167,6 +167,12 @@ def register_mcp(mcp):
             return f"error: {e}"
 
     @mcp.tool()
+    def get_trash_contents():
+        """returns a list of all files in the trash folder"""
+
+        return os.listdir(os.path.join(utils.get_data_path(), "trash"))
+
+    @mcp.tool()
     def empty_trash() -> str:
         """empties the trash folder. use with caution!"""
         trash_path = os.path.join(utils.get_data_path(), "trash")
