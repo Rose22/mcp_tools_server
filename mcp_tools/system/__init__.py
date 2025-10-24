@@ -159,18 +159,18 @@ def register_mcp(mcp):
         returns a bool representing if it was successful.
         """
 
-        if OS == "windows":
+        if OS == "linux":
+            if pid:
+                return utils.sh_exec(f"kill -9 {pid}")
+            elif process_name:
+                return utils.sh_exec(f"killall -9 {process_name}")
+        elif OS == "windows":
             return utils.sh_exec(f"taskkill /f /im {process_name}")
         elif OS == "darwin":
             if pid:
                 return utils.sh_exec(f"kill -9 {pid}")
             elif process_name:
                 return utils.sh_exec(f"pkill -f {process_name}")
-        else:
-            if pid:
-                return utils.sh_exec(f"kill -9 {pid}")
-            elif process_name:
-                return utils.sh_exec(f"killall -9 {process_name}")
 
         return False
 
@@ -179,12 +179,13 @@ def register_mcp(mcp):
         """
         locks the user's pc screen
         """
-        if OS == "windows":
+
+        if OS == "linux":
+            return utils.sh_exec("loginctl lock-session")
+        elif OS == "windows":
             return utils.sh_exec("rundll32.exe user32.dll,LockWorkStation")
         elif OS == "darwin":
             return utils.sh_exec("osascript -e 'tell application \"System Events\" to click button \"Lock\" of window \"Login Window\"'")
-        else:  # Linux
-            return utils.sh_exec("loginctl lock-session")
 
     # --- systemd services ---
     # disabled for now as this is very specific to arch linux

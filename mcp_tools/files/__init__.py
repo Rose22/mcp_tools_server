@@ -184,7 +184,7 @@ def register_mcp(mcp):
         trash_path = os.path.join(utils.get_data_path(), "trash")
 
         for file in os.listdir(trash_path):
-            if os.path.isdir(file):
+            if os.path.isdir(os.path.join(trash_path, file)):
                 shutil.rmtree(os.path.join(trash_path, file))
             else:
                 os.remove(os.path.join(trash_path, file))
