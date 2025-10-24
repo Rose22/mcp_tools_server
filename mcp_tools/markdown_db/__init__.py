@@ -93,7 +93,7 @@ def register_mcp(mcp):
         name, category = filter_data_path(type_name_plural, category, name)
 
         with open(os.path.join(DATA_PATH, type_name_plural, category, name+".md"), 'w') as f:
-            f.write(body)
+            f.write(content)
             f.write("\n")
         
         return "success"
