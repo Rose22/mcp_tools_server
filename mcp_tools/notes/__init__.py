@@ -2,16 +2,16 @@ import os
 import utils
 
 DATA_PATH = utils.get_data_path()
-NOTES_PATH = f"{DATA_PATH}/notes"
+NOTES_PATH = os.path.join(DATA_PATH, "notes")
 
 def filter_note_path(name, category):
     name = utils.strip_filename(name).replace(".md", "")
     category = utils.strip_filename(category)
 
-    if not os.path.exists(f"{NOTES_PATH}/{category}"):
+    if not os.path.exists(os.path.join(NOTES_PATH, category)):
         raise Exception("invalid category")
 
-    if not os.path.exists(f"{NOTES_PATH}/{category}/{name}.md"):
+    if not os.path.exists(os.path.join(NOTES_PATH, category, name, ".md")):
         raise Exception("note does not exist")
 
     return (name, category)
@@ -33,15 +33,15 @@ def register_mcp(mcp):
         name = utils.strip_filename(name)
         category = utils.strip_filename(category)
 
-        if not os.path.exists(f"{NOTES_PATH}/{category}"):
-            os.mkdir(f"{NOTES_PATH}/{category}")
+        if not os.path.exists(os.path.join(NOTES_PATH, category)):
+            os.mkdir(os.path.join(NOTES_PATH, category))
 
-        note_filename = f"{NOTES_PATH}/{category}/{name}.md"
+        note_path = os.path.join(NOTES_PATH, category, name, ".md")
 
-        if os.path.exists(note_filename):
+        if os.path.exists(note_path):
             return "note already exists! you should read it and then use edit_note() instead."
 
-        with open(note_filename, 'w') as f:
+        with open(note_path, 'w') as f:
             f.write(body)
             f.write("\n")
 
@@ -56,7 +56,7 @@ def register_mcp(mcp):
         utils.console_log(f"reading note {name}")
 
         name, category = filter_note_path(name, category)
-        return open(f"{NOTES_PATH}/{category}/{name}.md", 'r').read()
+        return open(os.path.join(NOTES_PATH, category, name, ".md"), 'r').read()
 
     @mcp.tool()
     def edit_note(name: str, category: str, body: str) -> str:
@@ -69,7 +69,7 @@ def register_mcp(mcp):
 
         name, category = filter_note_path(name, category)
 
-        with open(f"{NOTES_PATH}/{category}/{name}.md", 'w') as f:
+        with open(os.path.join(NOTES_PATH, category, name, ".md"), 'w') as f:
             f.write(body)
             f.write("\n")
         
@@ -82,7 +82,7 @@ def register_mcp(mcp):
         utils.console_log(f"deleting note {name}")
 
         name, category = filter_note_path(name, category)
-        os.remove(f"{NOTES_PATH}/{category}/{name}.md")
+        os.remove(os.path.join(NOTES_PATH, category, name, ".md"))
         return "success"
 
     @mcp.tool()
@@ -93,9 +93,9 @@ def register_mcp(mcp):
 
         results = []
         for category in os.listdir(NOTES_PATH):
-            for note_filename in os.listdir(f"{NOTES_PATH}/{category}"):
+            for note_filename in os.listdir(os.path.join(NOTES_PATH, category)):
                 note_name = os.path.splitext(note_filename)[0]
-                note_body = open(f"{NOTES_PATH}/{category}/{note_filename}").read()
+                note_body = open(os.path.join(NOTES_PATH, category, note_filename)).read()
 
                 if query in note_name or query in note_body:
                     results.append({"category": category, "name": note_name, "content": note_body})
