@@ -14,13 +14,24 @@ def filter_data_path(type_name_plural: str, category: str, name: str):
         raise Exception("invalid category")
 
     if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category, name+".md")):
-        raise Exception("note does not exist")
+        raise Exception("entry does not exist")
 
     return (name, category)
+
+def dummy_func():
+    # does literally nothing
+    pass
 
 def register_mcp(mcp):
     # this is a simple flat-file markdown database system
     # that's flexible and can easily be extended with additional types of data
+
+    mcp.tool(dummy_func, name="describe_database_system", description=f"""
+        when the user wants to know, tell the user this:
+
+        the database system is a flat-file database within {DATA_PATH}. every entry is a human-readable markdown file.
+        user can easily export and backup the database by simply copying that folder!
+    """, tags=["database"])
 
     def add_data_entry(type_name_plural: str, category: str, name: str, content: str):
         """creates an entry in the data folder. designed to be flexible and usable for things like notes, bookmarks, tasks, and so on!"""
@@ -40,12 +51,12 @@ def register_mcp(mcp):
         if not os.path.exists(os.path.join(data_type_path, category)):
             os.mkdir(os.path.join(data_type_path, category))
 
-        note_path = os.path.join(data_type_path, category, name+".md")
+        entry_path = os.path.join(data_type_path, category, name+".md")
 
-        if os.path.exists(note_path):
+        if os.path.exists(entry_path):
             return f"{name} already exists! you should read it and then edit it instead."
 
-        with open(note_path, 'w') as f:
+        with open(entry_path, 'w') as f:
             f.write(content)
             f.write("\n")
 
@@ -105,10 +116,56 @@ def register_mcp(mcp):
         for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)):
             for entry_filename in os.listdir(os.path.join(DATA_PATH, type_name_plural, category)):
                 entry_name = os.path.splitext(entry_filename)[0]
-                entry_content = open(os.path.join(DATA_PATH, type_name_plural, category, note_filename)).read()
+                entry_content = open(os.path.join(DATA_PATH, type_name_plural, category, entry_filename)).read()
 
                 if query in entry_name or query in entry_content:
                     results.append({"category": category, "name": entry_name, "content": entry_content})
+
+        return results
+
+    @mcp.tool(tags=["database"])
+    def search_entire_database(query: str, search_within_content: bool) -> list:
+        """
+        searches across all data types and categories for a specified query.
+        if search_within_content is true, it will search inside every file. otherwise it will only search by name.
+        searching by name is faster!
+        """
+
+        results = []
+
+        for type_name_plural in os.listdir(DATA_PATH):
+            for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)):
+                for filename in os.listdir(os.path.join(DATA_PATH, type_name_plural, category)):
+                    if search_within_content:
+                        try:
+                            content = open(os.path.join(DATA_PATH, type_name_plural, category, filename), 'r').read()
+                            if query in content:
+                                results.append({
+                                    "type": type_name_plural,
+                                    "category": category,
+                                    "name": name,
+                                    "content": content
+                                })
+                        except Exception as e:
+                            results.append({
+                                "type": type_name_plural,
+                                "category": category,
+                                "name": name,
+                                "error": e
+                            })
+                    else:
+                        if query in filename:
+                            try:
+                                content = open(os.path.join(DATA_PATH, type_name_plural, category, filename), 'r').read()
+                            except:
+                                content = None
+
+                            results.append({
+                                "type": type_name_plural,
+                                "category": category,
+                                "name": name,
+                                "content": content
+                            })
 
         return results
 
@@ -116,11 +173,18 @@ def register_mcp(mcp):
     # now for the secret sauce!
     # -----------
     def add_data_type(mcp, type_name_plural, type_name_singular, additional_instructions=None):
-        # create a function that's an alias to the data entry function
-        # and then overwrite the name and docstring passed to the LLM
-        # using mcp.tool()'s keyword arguments
+        """
+        this dynamically creates MCP tools based on a given data type.
+        it does this by defining a wrapper function and passing it
+        on to the MCP server with a dynamic name and docstring
+        using the mcp.tool() keyword arguments
+        """
 
-        # get categories
+        # create the folder for this data type
+        if not os.path.exists(os.path.join(DATA_PATH, type_name_plural)):
+            os.mkdir(os.path.join(DATA_PATH, type_name_plural))
+
+        # create wrapper function for: get categories
         def dyn_func1(_type=type_name_plural):
             return get_data_categories(_type)
         # then register it to the mcp server
@@ -128,6 +192,7 @@ def register_mcp(mcp):
             dyn_func1,
             name=f"get_{type_name_plural}",
             description=f"returns all {type_name_plural}",
+            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -144,6 +209,7 @@ creates a {type_name_singular} and adds it to the {type_name_singular} storage.
 please use markdown format!
 {additional_instructions}
         """,
+            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -154,6 +220,7 @@ please use markdown format!
             dyn_func3,
             name=f"get_{type_name_plural}_in_category",
             description=f"""returns all {type_name_plural} within a specified category""",
+            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -164,6 +231,7 @@ please use markdown format!
             dyn_func4,
             name=f"read_{type_name_singular}",
             description=f"reads a {type_name_singular} that's already in storage",
+            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -174,6 +242,7 @@ please use markdown format!
             dyn_func5,
             name=f"edit_{type_name_singular}",
             description=f"edits an existing {type_name_singular}. please use markdown format!",
+            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -184,6 +253,7 @@ please use markdown format!
             dyn_func6,
             name=f"delete_{type_name_singular}",
             description=f"deletes a {type_name_singular} by name",
+            tags=["database"],
             exclude_args=["_type"]
         )
         
@@ -194,10 +264,11 @@ please use markdown format!
             dyn_func7,
             name=f"search_{type_name_plural}",
             description=f"searches within the name and contents of all stored {type_name_plural} for your given query",
+            tags=["database"],
             exclude_args=["_type"]
         )
 
-    @mcp.tool()
+    @mcp.tool(tags=["database"])
     def get_data_types():
         """lists all available data entry types"""
         return [name for name in os.listdir(DATA_PATH) if name not in ("trash")]
@@ -207,6 +278,8 @@ please use markdown format!
     # ----------------------
     add_data_type(mcp, "notes", "note")
     add_data_type(mcp, "tasks", "task")
-    add_data_type(mcp, "events", "event")
+    add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
+    add_data_type(mcp, "events", "event", additional_instructions="always add a date and time")
     add_data_type(mcp, "contacts", "contact")
     add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="add a description of the bookmark!")
+    add_data_type(mcp, "recipes", "recipe", additional_instructions="format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions")
