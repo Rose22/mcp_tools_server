@@ -1,5 +1,6 @@
 import os
 import platform
+import shutil
 import datetime
 import json
 
@@ -80,22 +81,6 @@ def register_mcp(mcp):
         return data
 
     @mcp.tool()
-    def get_system_diagnostic_info():
-        """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
-
-        if OS not in ("windows", "darwin"):
-            return {
-                "mounts": utils.sh_exec("mount"),
-                "usb_devices": utils.sh_exec("lsusb"),
-                "kernel_modules": utils.sh_exec("lsmod"),
-                "usb_devices": utils.sh_exec("lsusb"),
-                "lsirq": utils.sh_exec("lsirq"),
-                "lsipc": utils.sh_exec("lsipc")
-            }
-        else:
-            return "diagnostic info not supported for this OS yet"
-
-    @mcp.tool()
     def get_disk_usage() -> list:
         """returns information about disk space usage"""
 
@@ -103,17 +88,6 @@ def register_mcp(mcp):
             return utils.sh_exec("df -h")
         elif OS == "windows":
             return utils.sh_exec("wmic logicaldisk")
-
-    @mcp.tool()
-    def fetch_man_page(cmd: str) -> list:
-        """returns a unix manpage for a specified command"""
-
-        if OS not in ("linux", "darwin"):
-            return "this is not a linux or mac system, man pages are not available"
-
-        cmd = cmd.split(" ")[0]
-
-        return utils.sh_exec(f"man --pager '' {cmd}")
 
     # --- processes ---
     @mcp.tool()
@@ -178,95 +152,141 @@ def register_mcp(mcp):
         elif OS == "darwin":
             return utils.sh_exec("osascript -e 'tell application \"System Events\" to click button \"Lock\" of window \"Login Window\"'")
 
+    # ----------------------
+    # linux specific tools
+    # ----
+    # we don't use the mcp.tool() decorator here
+    # because we check later on if we want to
+    # register these tools with the mcp server
+    # based on if user's OS is linux
+    def get_system_diagnostic_info_linux():
+        """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
+
+        return {
+            "mounts": utils.sh_exec("mount"),
+            "usb_devices": utils.sh_exec("lsusb"),
+            "kernel_modules": utils.sh_exec("lsmod"),
+            "usb_devices": utils.sh_exec("lsusb"),
+            "lsirq": utils.sh_exec("lsirq"),
+            "lsipc": utils.sh_exec("lsipc")
+        }
+
+    def fetch_man_page(cmd: str) -> list:
+        """returns a unix manpage for a specified command"""
+
+        if OS not in ("linux", "darwin"):
+            return "this is not a linux or mac system, man pages are not available"
+
+        cmd = cmd.split(" ")[0]
+
+        return utils.sh_exec(f"man --pager '' {cmd}")
+
     # --- systemd services ---
-    # disabled for now as this is very specific to arch linux
-    #@mcp.tool()
-    #def list_user_services() -> list:
-    #    """list systemd user services"""
+    def list_user_services() -> list:
+        """list systemd user services"""
 
-    #    return utils.sh_exec("systemctl --user list-unit-files --type service")
-    #@mcp.tool()
-    #def list_system_services() -> list:
-    #    """list systemd system services"""
+        return utils.sh_exec("systemctl --user list-unit-files --type service")
 
-    #    return utils.sh_exec("systemctl list-unit-files --type service")
-    #@mcp.tool()
+    def list_system_services() -> list:
+        """list systemd system services"""
 
-    #def system_service_status(name: str) -> list:
-    #    """get the status of a systemd system service"""
+        return utils.sh_exec("systemctl list-unit-files --type service")
 
-    #    return {
-    #            "status": utils.sh_exec(f"systemctl status {name}"),
-    #            "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
-    #    }
-    #@mcp.tool()
-    #def user_service_status(name: str) -> list:
-    #    """get the status of a systemd user service"""
+    def system_service_status(name: str) -> list:
+        """get the status of a systemd system service"""
 
-    #    return {
-    #            "status": utils.sh_exec(f"systemctl --user status {name}"),
-    #            "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
-    #    }
+        return {
+                "status": utils.sh_exec(f"systemctl status {name}"),
+                "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
+        }
 
-    #@mcp.tool()
-    #def start_user_service(name: str) -> list:
-    #    """start a systemd user service"""
+    def user_service_status(name: str) -> list:
+        """get the status of a systemd user service"""
 
-    #    if OS == "windows":
-    #        return utils.sh_exec(f"sc start {name}")
-    #    elif OS == "darwin":
-    #        return utils.sh_exec(f"launchctl load -w /Library/LaunchDaemons/{name}.plist")
-    #    else:  # Linux
-    #        return utils.sh_exec(f"systemctl --user start {name}")
+        return {
+                "status": utils.sh_exec(f"systemctl --user status {name}"),
+                "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
+        }
 
-    #@mcp.tool()
-    #def restart_user_service(name: str) -> list:
-    #    """restart a systemd user service"""
+    def start_user_service(name: str) -> list:
+        """start a systemd user service"""
 
-    #    return utils.sh_exec(f"systemctl --user restart {name}")
-    #@mcp.tool()
-    #def stop_user_service(name: str) -> list:
-    #    """stop a systemd user service"""
+        if OS == "windows":
+            return utils.sh_exec(f"sc start {name}")
+        elif OS == "darwin":
+            return utils.sh_exec(f"launchctl load -w /Library/LaunchDaemons/{name}.plist")
+        else:  # Linux
+            return utils.sh_exec(f"systemctl --user start {name}")
 
-    #    return utils.sh_exec(f"systemctl --user stop {name}")
-    #@mcp.tool()
-    #def kill_user_service(name: str) -> list:
-    #   """forcefully kill a systemd user service"""
-    #
-    #   return utils.sh_exec(f"systemctl --user kill {name}")
+    def restart_user_service(name: str) -> list:
+        """restart a systemd user service"""
+
+        return utils.sh_exec(f"systemctl --user restart {name}")
+
+    def stop_user_service(name: str) -> list:
+        """stop a systemd user service"""
+
+        return utils.sh_exec(f"systemctl --user stop {name}")
+
+    def kill_user_service(name: str) -> list:
+       """forcefully kill a systemd user service"""
+    
+       return utils.sh_exec(f"systemctl --user kill {name}")
 
     # --- media control ---
-    #@mcp.tool()
-    #def media_currently_playing() -> list:
-    #    """fetch what media is currently playing on user's device"""
+    def media_currently_playing() -> list:
+        """fetch what media is currently playing on user's device"""
 
-    #    return utils.sh_exec("playerctl metadata")
+        return utils.sh_exec("playerctl metadata")
 
-    #@mcp.tool()
-    #def media_toggle_pause():
-    #    """toggle media play/pause"""
+    def media_toggle_pause():
+        """toggle media play/pause"""
 
-    #    return utils.sh_exec("playerctl play-pause")
+        return utils.sh_exec("playerctl play-pause")
 
-    #@mcp.tool()
-    #def media_next():
-    #    """skip to next media"""
+    def media_next():
+        """skip to next media"""
 
-    #    return utils.sh_exec("playerctl next")
+        return utils.sh_exec("playerctl next")
 
-    #@mcp.tool()
-    #def media_previous():
-    #    """go back to previous media"""
+    def media_previous():
+        """go back to previous media"""
 
-    #    return utils.sh_exec("playerctl previous")
+        return utils.sh_exec("playerctl previous")
 
-    #@mcp.tool()
-    #def media_toggle_shuffle():
-    #    """toggle media player shuffle"""
+    def media_toggle_shuffle():
+        """toggle media player shuffle"""
 
-    #    return utils.sh_exec("playerctl shuffle Toggle")
+        return utils.sh_exec("playerctl shuffle Toggle")
 
-    #@mcp.tool()
-    #def media_stop():
-    #    """stop playing media"""
-    #    return utils.sh_exec("playerctl stop")
+    def media_stop():
+        """stop playing media"""
+        return utils.sh_exec("playerctl stop")
+
+    if OS == "linux":
+        # register all the linux-specific tools into the mcp server
+
+        mcp.tool(get_system_diagnostic_info_linux, name="get_system_diagnostic_info")
+        mcp.tool(fetch_man_page)
+
+        # add systemd control if systemd is installed
+        if shutil.which("systemctl"):
+            mcp.tool(list_user_services)
+            mcp.tool(list_system_services)
+            mcp.tool(system_service_status)
+            mcp.tool(user_service_status)
+            mcp.tool(start_user_service)
+            mcp.tool(restart_user_service)
+            mcp.tool(stop_user_service)
+            mcp.tool(kill_user_service)
+
+        # only add player controls if user's os is linux
+        # this is temporary until i figure out how to
+        # control media players on other platforms
+        if shutil.which("playerctl"):
+            mcp.tool(media_currently_playing)
+            mcp.tool(media_toggle_pause)
+            mcp.tool(media_next)
+            mcp.tool(media_previous)
+            mcp.tool(media_toggle_shuffle)
+            mcp.tool(media_stop)
