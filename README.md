@@ -39,6 +39,8 @@ add that as the command in your AI user interface of choice. the transport type 
 
 (there will be a proper config system soon..)
 
+# see it in action!
+
 <img width="545" height="877" alt="image" src="https://github.com/user-attachments/assets/c6e03c7c-9bb3-4e95-b049-01fc81588e8b" />  
 
 <img width="500" height="749" alt="image" src="https://github.com/user-attachments/assets/f4f361d9-d00c-4b81-afdb-04c2a218ab6a" />  
