@@ -143,14 +143,14 @@ def register_mcp(mcp):
                                 results.append({
                                     "type": type_name_plural,
                                     "category": category,
-                                    "name": name,
+                                    "name": filename,
                                     "content": content
                                 })
                         except Exception as e:
                             results.append({
                                 "type": type_name_plural,
                                 "category": category,
-                                "name": name,
+                                "name": filename,
                                 "error": e
                             })
                     else:
@@ -163,7 +163,7 @@ def register_mcp(mcp):
                             results.append({
                                 "type": type_name_plural,
                                 "category": category,
-                                "name": name,
+                                "name": filename,
                                 "content": content
                             })
 
