@@ -4,10 +4,9 @@ import utils
 
 def register_mcp(mcp):
     @mcp.tool()
-    def list_dir(path: str, query: str = None) -> list:
+    def list_dir(path: str) -> list:
         """
         list the files in a directory.
-        you can optionally supply a query to search based on filename.
         """
         try:
             files = os.listdir(os.path.expanduser(path))
@@ -15,15 +14,9 @@ def register_mcp(mcp):
             return [f"error: {e}"]
 
         utils.console_log(f"listing dir {path}")
-        if query:
-            utils.console_log(f"using query {query}")
 
         result = []
         for file_name in files:
-            if query:
-                if query not in file_name:
-                    continue
-
             file_path = os.path.expanduser(f"{path}/{file_name}")
             file_ext = os.path.splitext(file_name)[-1]
             file_type = "file" if os.path.isfile(file_path) else "directory"
