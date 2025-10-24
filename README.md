@@ -1,4 +1,4 @@
-# advanced MCP tools
+# MCP server that enables any LLM to function as a Siri/Alexa/Google-style AI assistant
 
 this is a very flexible and capable MCP server intended to be run on your own device. it's inspired by classic AI assistants like Siri, Alexa and Google Assistant but adding an LLM to that mix turns it all up to 11!
 
