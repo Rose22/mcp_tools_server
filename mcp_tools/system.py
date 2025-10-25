@@ -272,7 +272,7 @@ def register_mcp(mcp):
 
         return utils.sh_exec("systemctl list-unit-files --type service")
 
-    def system_service_status(name: str) -> list:
+    def system_service_status(name: str) -> dict:
         """get the status of a systemd system service"""
 
         return {
@@ -280,7 +280,7 @@ def register_mcp(mcp):
                 "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
         }
 
-    def user_service_status(name: str) -> list:
+    def user_service_status(name: str) -> dict:
         """get the status of a systemd user service"""
 
         return {
