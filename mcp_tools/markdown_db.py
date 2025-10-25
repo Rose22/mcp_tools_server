@@ -13,7 +13,7 @@ def filter_data_path(type_name_plural: str, category: str, name: str):
         raise Exception("trash is not a data type!")
 
     if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-        raise Exception("invalid category")
+        raise Exception("invalid category "+os.path.join(DATA_PATH, type_name_plural, category))
 
     if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category, name+".md")):
         raise Exception("entry does not exist")
@@ -33,9 +33,9 @@ def register_mcp(mcp):
 
         the database system is a flat-file database within {DATA_PATH}. every entry is a human-readable markdown file.
         user can easily export and backup the database by simply copying that folder!
-    """, tags=["database"])
+    """)
 
-    def add_data_entry(type_name_plural: str, category: str, name: str, content: str):
+    def add_data_entry(type_name_plural: str, category: str, name: str, content: str) -> dict:
         """creates an entry in the data folder. designed to be flexible and usable for things like notes, bookmarks, tasks, and so on!"""
         # not callable by the LLM, this is an internal function used by all the other types of data entry functions.
 
@@ -56,12 +56,12 @@ def register_mcp(mcp):
         entry_path = os.path.join(data_type_path, category, name+".md")
 
         if os.path.exists(entry_path):
-            return f"{name} already exists! you should read it and then edit it instead."
+            return {"error": f"{name} already exists! you should read it and then edit it instead."}
 
         with open(entry_path, 'w') as f:
             f.write(content)
 
-        return "success"
+        return {"status": "success"}
 
     def get_data_categories(type_name_plural: str) -> dict:
         """gets all categories (folders) within a data type"""
@@ -72,9 +72,9 @@ def register_mcp(mcp):
 
         try:
             if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-                return "no such category!"
+                return {"error": "no such category!"}
 
-            return {"categories": [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]}
+            return {type_name_plural: [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]}
         except Exception as e:
             return {"error": e}
 
@@ -147,7 +147,7 @@ def register_mcp(mcp):
 
         return {"search_results": results}
 
-    @mcp.tool(tags=["database"])
+    @mcp.tool()
     def search_entire_database(query: str, search_within_content: bool) -> dict:
         """
         searches across all data types and categories for a specified query.
@@ -196,7 +196,7 @@ def register_mcp(mcp):
     # ------
     # now for the secret sauce!
     # -----------
-    def add_data_type(mcp, type_name_plural, type_name_singular, additional_instructions=None):
+    def add_data_type(mcp, type_name_plural, type_name_singular, additional_instructions=""):
         """
         this dynamically creates MCP tools based on a given data type.
         it does this by defining a wrapper function and passing it
@@ -214,9 +214,9 @@ def register_mcp(mcp):
         # then register it to the mcp server
         mcp.tool(
             dyn_func1,
-            name=f"get_{type_name_plural}",
-            description=f"lists all {type_name_plural}",
-            tags=["database"],
+            name=f"db_get_{type_name_plural}",
+            # sheesh this one's particularly tough for an LLM
+            description=f"""returns all {type_name_plural} in the database. always call this tool when user explicitly asks for their {type_name_plural} or wants to see what's stored.""",
             exclude_args=["_type"]
         )
 
@@ -227,13 +227,12 @@ def register_mcp(mcp):
             return add_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func2,
-            name=f"create_{type_name_singular}",
+            name=f"db_create_{type_name_singular}",
             description=f"""
 creates a {type_name_singular} and adds it to the {type_name_singular} storage.
 please use markdown format!
 {additional_instructions}
         """,
-            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -242,9 +241,8 @@ please use markdown format!
             return get_data_entries(_type, category)
         mcp.tool(
             dyn_func3,
-            name=f"get_{type_name_plural}_in_category",
+            name=f"db_get_{type_name_plural}_in_category",
             description=f"""returns all {type_name_plural} within a specified category""",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -253,9 +251,8 @@ please use markdown format!
             return rename_data_category(_type, category, category_new)
         mcp.tool(
             dyn_func4,
-            name=f"rename_{type_name_singular}_category",
+            name=f"db_rename_{type_name_singular}_category",
             description=f"""renames a {type_name_singular} category""",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -264,20 +261,18 @@ please use markdown format!
             return delete_data_category(_type, category)
         mcp.tool(
             dyn_func5,
-            name=f"delete_{type_name_singular}_category",
+            name=f"db_delete_{type_name_singular}_category",
             description=f"""deletes a {type_name_singular} category""",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
         # get singular entry
         def dyn_func6(category: str, name: str, _type=type_name_plural) -> dict:
-            return get_data_entry(category, name, _type)
+            return get_data_entry(_type, category, name)
         mcp.tool(
             dyn_func6,
-            name=f"read_{type_name_singular}",
+            name=f"db_read_{type_name_singular}",
             description=f"reads a {type_name_singular} that's already in storage",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -286,9 +281,8 @@ please use markdown format!
             return edit_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func7,
-            name=f"edit_{type_name_singular}",
+            name=f"db_edit_{type_name_singular}",
             description=f"edits an existing {type_name_singular}. please use markdown format! {additional_instructions}",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
@@ -297,9 +291,8 @@ please use markdown format!
             return delete_data_entry(_type, category, name)
         mcp.tool(
             dyn_func8,
-            name=f"delete_{type_name_singular}",
+            name=f"db_delete_{type_name_singular}",
             description=f"deletes a {type_name_singular} by name",
-            tags=["database"],
             exclude_args=["_type"]
         )
         
@@ -308,13 +301,12 @@ please use markdown format!
             return search_in_data(_type, query)
         mcp.tool(
             dyn_func9,
-            name=f"search_{type_name_plural}",
+            name=f"db_search_{type_name_plural}",
             description=f"searches within the name and contents of all stored {type_name_plural} for your given query",
-            tags=["database"],
             exclude_args=["_type"]
         )
 
-    @mcp.tool(tags=["database"])
+    @mcp.tool()
     def get_data_types():
         """lists all available data entry types"""
         return [name for name in os.listdir(DATA_PATH) if name not in ("trash")]
