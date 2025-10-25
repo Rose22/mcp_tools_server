@@ -28,12 +28,12 @@ def register_mcp(mcp):
     # this is a simple flat-file markdown database system
     # that's flexible and can easily be extended with additional types of data
 
-    mcp.tool(dummy_func, name="describe_database_system", description=f"""
-        when the user wants to know, tell the user this:
+    #mcp.tool(dummy_func, name="describe_database_system", description=f"""
+    #    when the user wants to know, tell the user this:
 
-        the database system is a flat-file database within {DATA_PATH}. every entry is a human-readable markdown file.
-        user can easily export and backup the database by simply copying that folder!
-    """)
+    #    the database system is a flat-file database within {DATA_PATH}. every entry is a human-readable markdown file.
+    #    user can easily export and backup the database by simply copying that folder!
+    #""")
 
     def add_data_entry(type_name_plural: str, category: str, name: str, content: str) -> dict:
         """creates an entry in the data folder. designed to be flexible and usable for things like notes, bookmarks, tasks, and so on!"""
@@ -56,27 +56,33 @@ def register_mcp(mcp):
         entry_path = os.path.join(data_type_path, category, name+".md")
 
         if os.path.exists(entry_path):
-            return {"error": f"{name} already exists! you should read it and then edit it instead."}
+            return utils.result(None, f"{name} already exists! you should read it and then edit it instead.")
 
         with open(entry_path, 'w') as f:
             f.write(content)
 
         return utils.result(True)
 
-    def get_data_categories(type_name_plural: str) -> dict:
-        """gets all categories (folders) within a data type"""
-        return {"categories": [category for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)) if os.path.isdir(os.path.join(DATA_PATH, type_name_plural, category))]}
+    def get_data_entries(type_name_plural: str) -> dict:
+        results = {}
 
-    def get_data_entries(type_name_plural: str, category: str) -> dict:
-        """gets all entries within a category of a data type"""
+        type_path = os.path.join(DATA_PATH, type_name_plural)
+        if not os.path.exists(type_path):
+            return utils.result(None, f"invalid data type: {type_name_plural}")
 
-        try:
-            if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-                return utils.result(None, "no such category!")
 
-            return {type_name_plural: [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]}
-        except Exception as e:
-            return utils.result(None, e)
+        for category in os.listdir(
+            os.path.join(DATA_PATH, type_name_plural)
+        ):
+            results[category] = []
+
+            for filename in os.listdir(
+                os.path.join(DATA_PATH, type_name_plural, category)
+            ):
+                if filename.endswith(".md"):
+                    results[category].append(filename.replace(".md", ""))
+                
+        return utils.result(results)
 
     def rename_data_category(type_name_plural: str, category: str, category_new: str) -> dict:
         """rename a category"""
@@ -214,25 +220,25 @@ def register_mcp(mcp):
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural)):
             os.mkdir(os.path.join(DATA_PATH, type_name_plural))
 
-        # create wrapper function for: get categories
-        def dyn_func1(_type=type_name_plural) -> dict:
-            return get_data_categories(_type)
+        # create wrapper function for: get data entries
+        def _get_data_entries(_type=type_name_plural) -> dict:
+            return get_data_entries(_type)
         # then register it to the mcp server
         mcp.tool(
-            dyn_func1,
+            _get_data_entries,
             name=f"db_get_{type_name_plural}",
             # sheesh this one's particularly tough for an LLM
-            description=f"""returns all {type_name_plural} in the database. always call this tool when user explicitly asks for their {type_name_plural} or wants to see what's stored.""",
+            description=f"returns all {type_name_plural}. You MUST call this tool when the user asks ANYTHING about their {type_name_plural} - including 'what {type_name_plural} do I have?', 'show me my {type_name_plural}', or 'what's in my {type_name_plural}?'. Never guess or provide generic responses.",
             exclude_args=["_type"]
         )
 
         # repeat for all other data functions
 
         # add data entry
-        def dyn_func2(category: str, name: str, content: str, _type=type_name_plural) -> dict:
+        def _add_data_entry(category: str, name: str, content: str, _type=type_name_plural) -> dict:
             return add_data_entry(_type, category, name, content)
         mcp.tool(
-            dyn_func2,
+            _add_data_entry,
             name=f"db_create_{type_name_singular}",
             description=f"""
 creates a {type_name_singular} and adds it to the {type_name_singular} storage.
@@ -242,73 +248,63 @@ please use markdown format!
             exclude_args=["_type"]
         )
 
-        # get entries
-        def dyn_func3(category: str, _type=type_name_plural) -> dict:
-            return get_data_entries(_type, category)
-        mcp.tool(
-            dyn_func3,
-            name=f"db_get_{type_name_plural}_in_category",
-            description=f"""returns all {type_name_plural} within a specified category""",
-            exclude_args=["_type"]
-        )
-
-        # rename category
-        def dyn_func4(category: str, category_new: str, _type=type_name_plural) -> dict:
-            return rename_data_category(_type, category, category_new)
-        mcp.tool(
-            dyn_func4,
-            name=f"db_rename_{type_name_singular}_category",
-            description=f"""renames a {type_name_singular} category""",
-            exclude_args=["_type"]
-        )
-
-        # delete category
-        def dyn_func5(category: str, _type=type_name_plural) -> dict:
-            return delete_data_category(_type, category)
-        mcp.tool(
-            dyn_func5,
-            name=f"db_delete_{type_name_singular}_category",
-            description=f"""deletes a {type_name_singular} category""",
-            exclude_args=["_type"]
-        )
-
-        # get singular entry
-        def dyn_func6(category: str, name: str, _type=type_name_plural) -> dict:
+        # get data entry
+        def _get_data_entry(category: str, name: str, _type=type_name_plural) -> dict:
             return get_data_entry(_type, category, name)
         mcp.tool(
-            dyn_func6,
+            _get_data_entry,
             name=f"db_read_{type_name_singular}",
-            description=f"reads a {type_name_singular} that's already in storage",
+            description=f"reads a {type_name_singular} within the database",
             exclude_args=["_type"]
         )
 
         # edit entry
-        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural) -> dict:
+        def _edit_data_entry(category: str, name: str, content: str, _type=type_name_plural) -> dict:
             return edit_data_entry(_type, category, name, content)
         mcp.tool(
-            dyn_func7,
+            _edit_data_entry,
             name=f"db_edit_{type_name_singular}",
             description=f"edits an existing {type_name_singular}. please use markdown format! {additional_instructions}",
             exclude_args=["_type"]
         )
 
         # delete entry
-        def dyn_func8(category: str, name: str, _type=type_name_plural) -> dict:
+        def _delete_data_entry(category: str, name: str, _type=type_name_plural) -> dict:
             return delete_data_entry(_type, category, name)
         mcp.tool(
-            dyn_func8,
+            _delete_data_entry,
             name=f"db_delete_{type_name_singular}",
             description=f"deletes a {type_name_singular} by name",
             exclude_args=["_type"]
         )
         
         # search for entry
-        def dyn_func9(query: str, _type=type_name_plural) -> dict:
+        def _search_in_data(query: str, _type=type_name_plural) -> dict:
             return search_in_data(_type, query)
         mcp.tool(
-            dyn_func9,
+            _search_in_data,
             name=f"db_search_{type_name_plural}",
             description=f"searches within the name and contents of all stored {type_name_plural} for your given query",
+            exclude_args=["_type"]
+        )
+
+        # rename category
+        def _rename_data_category(category: str, category_new: str, _type=type_name_plural) -> dict:
+            return rename_data_category(_type, category, category_new)
+        mcp.tool(
+            _rename_data_category,
+            name=f"db_rename_{type_name_singular}_category",
+            description=f"""renames a {type_name_singular} category""",
+            exclude_args=["_type"]
+        )
+
+        # delete category
+        def _delete_data_category(category: str, _type=type_name_plural) -> dict:
+            return delete_data_category(_type, category)
+        mcp.tool(
+            _delete_data_category,
+            name=f"db_delete_{type_name_singular}_category",
+            description=f"""deletes a {type_name_singular} category""",
             exclude_args=["_type"]
         )
 
@@ -329,7 +325,7 @@ please use markdown format!
     add_data_type(mcp, "ideas", "idea")
     add_data_type(mcp, "checklists", "checklist")
     add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
-    add_data_type(mcp, "events", "event", additional_instructions="always add a date and time")
+    add_data_type(mcp, "events", "event", additional_instructions="always add a date and time, and include it in the name of the note")
     add_data_type(mcp, "contacts", "contact")
     add_data_type(mcp, "conversation_logs", "conversation_log")
     add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="always include the original URL and a description of the bookmark")
