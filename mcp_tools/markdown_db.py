@@ -61,7 +61,7 @@ def register_mcp(mcp):
         with open(entry_path, 'w') as f:
             f.write(content)
 
-        return {"status": "success"}
+        return utils.result(True)
 
     def get_data_categories(type_name_plural: str) -> dict:
         """gets all categories (folders) within a data type"""
@@ -72,34 +72,34 @@ def register_mcp(mcp):
 
         try:
             if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-                return {"error": "no such category!"}
+                return utils.result(None, "no such category!")
 
             return {type_name_plural: [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]}
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
     def rename_data_category(type_name_plural: str, category: str, category_new: str) -> dict:
         """rename a category"""
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-            return {"error": "no such category!"}
+            return utils.result(None, "no such category!")
 
         try:
             shutil.move(os.path.join(DATA_PATH, type_name_plural, category), os.path.join(DATA_PATH, type_name_plural, category_new))
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
-        return {"status": "success"}
+        return utils.result(True)
     
     def delete_data_category(type_name_plural: str, category: str) -> dict:
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-            return {"error": "no such category!"}
+            return utils.result(None, "no such category!")
 
         try:
             shutil.rmtree(os.path.join(DATA_PATH, type_name_plural, category))
         except Exception as e:
-            return {"error": e}
+            return utils.result(e)
 
-        return {"status": "success"}
+        return utils.result(True)
 
     def get_data_entry(type_name_plural: str, category: str, name: str) -> dict:
         """gets the content of a data entry"""
@@ -107,7 +107,13 @@ def register_mcp(mcp):
         utils.console_log(f"reading entry {name} of type {type_name_plural}")
 
         name, category = filter_data_path(type_name_plural, category, name)
-        return {"content": open(os.path.join(DATA_PATH, type_name_plural, category, name+".md"), 'r').read()}
+        return utils.result(
+            open(
+                os.path.join(DATA_PATH, type_name_plural, category, name+".md"),
+                'r'
+            )
+            .read()
+        )
     
     def edit_data_entry(type_name_plural: str, category: str, name: str, content: str) -> dict:
         """edits a data entry"""
@@ -120,7 +126,7 @@ def register_mcp(mcp):
             f.write(content)
             f.write("\n")
         
-        return {"status": "success"}
+        return utils.result(True)
     
     def delete_data_entry(type_name_plural: str, category: str, name: str) -> dict: 
         """deletes a data entry by name"""
@@ -129,7 +135,7 @@ def register_mcp(mcp):
 
         name, category = filter_data_path(type_name_plural, category, name)
         os.remove(os.path.join(DATA_PATH, type_name_plural, category, name+".md"))
-        return {"status": "success"}
+        return utils.result(True)
 
     def search_in_data(type_name_plural: str, query: str) -> dict:
         """searches a given data type for a given query across all its categories"""
@@ -145,7 +151,7 @@ def register_mcp(mcp):
                 if query in entry_name or query in entry_content:
                     results.append({"category": category, "name": entry_name, "content": entry_content})
 
-        return {"search_results": results}
+        return utils.result(results)
 
     @mcp.tool()
     def search_entire_database(query: str, search_within_content: bool) -> dict:
@@ -191,7 +197,7 @@ def register_mcp(mcp):
                                 "content": content
                             })
 
-        return {"search_results": results}
+        return utils.result(results)
 
     # ------
     # now for the secret sauce!
@@ -309,7 +315,11 @@ please use markdown format!
     @mcp.tool()
     def get_data_types():
         """lists all available data entry types"""
-        return [name for name in os.listdir(DATA_PATH) if name not in ("trash")]
+        return utils.result([
+            name for name
+            in os.listdir(DATA_PATH)
+            if name not in ("trash")
+        ])
 
     # ------------
     # add data types here!

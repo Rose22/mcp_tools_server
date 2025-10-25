@@ -11,22 +11,40 @@ def get_data_path():
 
     return path
 
+def result(obj, error=None):
+    output = {
+        "data": obj,
+        "status": "success" if not error else "error"
+    }
+
+    if error:
+        output["error"] = error
+
+    return output
+
 def strip_filename(filename):
     return filename.strip().lower().replace(" ", "_")
 
 def console_log(text):
     print(f"\033[1;34m[MCP] {text}\033[0m")
 
-def sh_exec(cmd):
+def sh_exec(cmd) -> dict:
     """executes a command and returns the output as a string"""
 
     console_log(f"sh: {cmd}")
     try:
         result = subprocess.run(cmd.split(" "), capture_output=True, text=True)
+        result.check_returncode()
     except Exception as e:
-        return [f"error while executing command '{cmd}': {e}"]
+        return {"error": f"error while executing command '{cmd}': {e}"}
 
-    return(result.stdout.split("\n"))
+    results = {}
+    results['output'] = result.stdout.split("\n")
+
+    if len(result.stderr) > 0:
+        results['errors'] = result.stderr.split("\n")
+
+    return result(results)
 
 def sizeof_format(num, suffix="B"):
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):

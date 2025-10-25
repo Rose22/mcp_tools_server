@@ -35,7 +35,7 @@ def register_mcp(mcp):
 
         utils.console_log("done")
 
-        return {"result": result}
+        return utils.result(result)
 
     #@mcp.tool()
     #def list_dir_recursive(path: str) -> list:
@@ -56,7 +56,6 @@ def register_mcp(mcp):
         """creates a directory. takes an absolute path, will automatically create any directories in the path to it"""
 
         os.makedirs(path, exist_ok=True)
-        return {"status": "success"}
 
     @mcp.tool()
     def create_file(path: str, body: str) -> dict:
@@ -66,7 +65,7 @@ def register_mcp(mcp):
 
         open(path, 'w').write(body)
 
-        return {"status": "success"}
+        return utils.result(True)
 
     @mcp.tool()
     def write_file(path: str, body: str) -> dict:
@@ -83,15 +82,15 @@ def register_mcp(mcp):
 
         try:
             open(path, 'w').write(body)
-            return {"status": "success"}
+            return utils.result(True)
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
     @mcp.tool()
     def append_to_file(path: str, body: str) -> dict:
         """append to file. always makes a backup for safety."""
         if not os.path.exists(path):
-            return {"error": "file did not exist"}
+            return utils.result(None, "file did not exist")
 
         utils.console_log(f"appending to file {path}:\n---\n{body}\n---\n")
 
@@ -100,14 +99,14 @@ def register_mcp(mcp):
             timestamp = datetime.datetime.now().strftime("%d%M%Y%H%M%S")
             shutil.copy(path, f"{path}.{timestamp}.old")
         except Exception as e:
-            return {"error": f"error while backing up file: {e}"}
+            return utils.result(None, f"error while backing up file: {e}")
 
         try:
             with open(path, 'a') as f:
                 f.write("\n"+body)
-            return {"status": "success"}
+            return utils.result(True)
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
     @mcp.tool()
     def move_file(src_path: str, target_path: str) -> dict:
@@ -117,9 +116,9 @@ def register_mcp(mcp):
 
         try:
             shutil.move(src_path, target_path)
-            return {"status": "success"}
+            return utils.result(True)
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
     @mcp.tool()
     def move_multiple_files(list_of_moves: list) -> dict:
@@ -157,7 +156,7 @@ def register_mcp(mcp):
                     output
             ])
 
-        return {"result": result}
+        return utils.result(result)
 
     @mcp.tool()
     def delete_file(path: str) -> dict:
@@ -169,15 +168,19 @@ def register_mcp(mcp):
 
         try:
             shutil.move(path, os.path.join(trash_path, os.path.basename(path)))
-            return {"result": "success"}
+            return utils.result(True)
         except Exception as e:
-            return {"error": e}
+            return utils.result(None, e)
 
     @mcp.tool()
     def get_trash_contents() -> dict:
         """returns a list of all files in the trash folder"""
 
-        return {"result": os.listdir(os.path.join(utils.get_data_path(), "trash"))}
+        return utils.result(
+            os.listdir(
+                os.path.join(utils.get_data_path(), "trash")
+            )
+        )
 
     @mcp.tool()
     def empty_trash() -> dict:
@@ -190,4 +193,4 @@ def register_mcp(mcp):
             else:
                 os.remove(os.path.join(trash_path, file))
 
-        return {"status": "success"}
+        return utils.result(True)

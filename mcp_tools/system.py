@@ -16,7 +16,7 @@ def register_mcp(mcp):
     def get_datetime() -> dict:
         """gets the current time and date"""
 
-        return {"date": datetime.datetime.now().strftime("%H:%M %d-%M-%Y")}
+        return utils.result(datetime.datetime.now().strftime("%H:%M %d-%M-%Y"))
 
     @mcp.tool()
     def get_system_info() -> dict:
@@ -80,7 +80,7 @@ def register_mcp(mcp):
             data["memory_usage"] = utils.sh_exec("wmic memorychip get Capacity")  # Total RAM
             data['disk_usage'] = utils.sh_exec("wmic logicaldisk get DeviceID, Size, FreeSpace")
 
-        return data
+        return utils.result(data)
 
     @mcp.tool()
     def get_disk_usage() -> dict:
@@ -116,7 +116,7 @@ def register_mcp(mcp):
     def get_home_dir_path() -> dict:
         """get path to user's home directory"""
 
-        return {"home_path": os.path.expanduser("~")}
+        return utils.result(os.path.expanduser("~"))
 
     # --- system control ---
     @mcp.tool()
@@ -139,7 +139,7 @@ def register_mcp(mcp):
             elif process_name:
                 return utils.sh_exec(f"pkill -f {process_name}")
 
-        return False
+        return utils.result(False)
 
     @mcp.tool()
     def lock_screen() -> dict:
@@ -175,14 +175,14 @@ def register_mcp(mcp):
     def get_system_diagnostic_info_linux() -> dict:
         """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
 
-        return {
+        return utils.result({
             "mounts": utils.sh_exec("mount"),
             "usb_devices": utils.sh_exec("lsusb"),
             "kernel_modules": utils.sh_exec("lsmod"),
             "usb_devices": utils.sh_exec("lsusb"),
             "lsirq": utils.sh_exec("lsirq"),
             "lsipc": utils.sh_exec("lsipc")
-        }
+        })
 
     def fetch_man_page(cmd: str) -> dict:
         """returns a unix manpage for a specified command"""
@@ -197,7 +197,7 @@ def register_mcp(mcp):
     def get_user_environment_variables() -> dict:
         """get environment variables for the user's current session"""
 
-        return dict(os.environ)
+        return utils.result(dict(os.environ))
 
     def list_logged_in_users() -> dict:
         """get users currently logged in to user's linux system"""
@@ -227,7 +227,7 @@ def register_mcp(mcp):
         if shutil.which("snap"):
             result['snap_packages'] = utils.sh_exec("snap list")
 
-        return result
+        return utils.result(result)
 
     def search_linux_packages(query: str) -> dict:
         """search for a package in user's linux package manager"""
@@ -246,7 +246,7 @@ def register_mcp(mcp):
         if shutil.which("snap"):
             result['snap_packages'] = utils.sh_exec(f"snap find {query}")
 
-        return result
+        return utils.result(result)
 
     def flatpak_install_package(name: str) -> dict:
         """install a flatpak package"""
@@ -275,18 +275,18 @@ def register_mcp(mcp):
     def system_service_status(name: str) -> dict:
         """get the status of a systemd system service"""
 
-        return {
+        return utils.result({
             "status": utils.sh_exec(f"systemctl status {name}"),
             "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
-        }
+        })
 
     def user_service_status(name: str) -> dict:
         """get the status of a systemd user service"""
 
-        return {
+        return utils.result({
             "status": utils.sh_exec(f"systemctl --user status {name}"),
             "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
-        }
+        })
 
     def start_user_service(name: str) -> dict:
         """start a systemd user service"""

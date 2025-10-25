@@ -27,8 +27,8 @@ def register_mcp(mcp):
 
         result = utils.sh_exec(f"ping -c 1 {addr}")
         if len(result) <= 1:
-            return {"error": "could not reach address"}
-        return result 
+            return utils.result(None, "could not reach address")
+        return utils.result(result)
 
     @mcp.tool()
     def list_open_ports() -> dict:

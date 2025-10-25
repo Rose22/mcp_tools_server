@@ -404,7 +404,7 @@ def register_mcp(mcp):
             # first, process any special domains, such as youtube
             output = await process_domains(domain, path)
             if output:
-                return output
+                return utils.result(output)
 
             # then if that didn't do anything, switch to Processing based on file type
 
@@ -426,7 +426,7 @@ def register_mcp(mcp):
                     return list_dir(path)
             else:
                 # file not found!
-                return {"error": "no such file or directory"}
+                return utils.result(None, "no such file or directory")
 
         import hashlib
 
@@ -588,7 +588,7 @@ def register_mcp(mcp):
 
         utils.console_log("done processing")
 
-        return result
+        return utils.result(result)
 
     @mcp.tool()
     async def read_multiple_files_or_urls(
