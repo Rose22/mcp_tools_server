@@ -63,53 +63,53 @@ def register_mcp(mcp):
 
         return "success"
 
-    def get_data_categories(type_name_plural: str):
+    def get_data_categories(type_name_plural: str) -> dict:
         """gets all categories (folders) within a data type"""
-        return [category for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)) if os.path.isdir(os.path.join(DATA_PATH, type_name_plural, category))]
+        return {"categories": [category for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)) if os.path.isdir(os.path.join(DATA_PATH, type_name_plural, category))]}
 
-    def get_data_entries(type_name_plural: str, category: str):
+    def get_data_entries(type_name_plural: str, category: str) -> dict:
         """gets all entries within a category of a data type"""
 
         try:
             if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
                 return "no such category!"
 
-            return [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]
+            return {"categories": [name.replace(".md", "") for name in os.listdir(os.path.join(DATA_PATH, type_name_plural, category))]}
         except Exception as e:
-            return [f"error: {e}"]
+            return {"error": e}
 
-    def rename_data_category(type_name_plural: str, category: str, category_new: str):
+    def rename_data_category(type_name_plural: str, category: str, category_new: str) -> dict:
         """rename a category"""
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-            return "no such category!"
+            return {"error": "no such category!"}
 
         try:
             shutil.move(os.path.join(DATA_PATH, type_name_plural, category), os.path.join(DATA_PATH, type_name_plural, category_new))
         except Exception as e:
-            return f"error: {e}"
+            return {"error": e}
 
-        return "success"
+        return {"status": "success"}
     
-    def delete_data_category(type_name_plural: str, category: str):
+    def delete_data_category(type_name_plural: str, category: str) -> dict:
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
-            return "no such category!"
+            return {"error": "no such category!"}
 
         try:
             shutil.rmtree(os.path.join(DATA_PATH, type_name_plural, category))
         except Exception as e:
-            return f"error: {e}"
+            return {"error": e}
 
-        return "success"
+        return {"status": "success"}
 
-    def get_data_entry(type_name_plural: str, category: str, name: str):
+    def get_data_entry(type_name_plural: str, category: str, name: str) -> dict:
         """gets the content of a data entry"""
 
         utils.console_log(f"reading entry {name} of type {type_name_plural}")
 
         name, category = filter_data_path(type_name_plural, category, name)
-        return open(os.path.join(DATA_PATH, type_name_plural, category, name+".md"), 'r').read()
+        return {"content": open(os.path.join(DATA_PATH, type_name_plural, category, name+".md"), 'r').read()}
     
-    def edit_data_entry(type_name_plural: str, category: str, name: str, content: str):
+    def edit_data_entry(type_name_plural: str, category: str, name: str, content: str) -> dict:
         """edits a data entry"""
 
         utils.console_log(f"editing entry {name} of type {type_name_plural}")
@@ -120,18 +120,18 @@ def register_mcp(mcp):
             f.write(content)
             f.write("\n")
         
-        return "success"
+        return {"status": "success"}
     
-    def delete_data_entry(type_name_plural: str, category: str, name: str): 
+    def delete_data_entry(type_name_plural: str, category: str, name: str) -> dict: 
         """deletes a data entry by name"""
 
         utils.console_log(f"deleting {name} of type {type_name_plural}")
 
         name, category = filter_data_path(type_name_plural, category, name)
         os.remove(os.path.join(DATA_PATH, type_name_plural, category, name+".md"))
-        return "success"
+        return {"status": "success"}
 
-    def search_in_data(type_name_plural: str, query: str):
+    def search_in_data(type_name_plural: str, query: str) -> dict:
         """searches a given data type for a given query across all its categories"""
 
         utils.console_log(f"searching {type_name_plural} for {query}")
@@ -145,10 +145,10 @@ def register_mcp(mcp):
                 if query in entry_name or query in entry_content:
                     results.append({"category": category, "name": entry_name, "content": entry_content})
 
-        return results
+        return {"search_results": results}
 
     @mcp.tool(tags=["database"])
-    def search_entire_database(query: str, search_within_content: bool) -> list:
+    def search_entire_database(query: str, search_within_content: bool) -> dict:
         """
         searches across all data types and categories for a specified query.
         if search_within_content is true, it will search inside every file. otherwise it will only search by name.
@@ -191,7 +191,7 @@ def register_mcp(mcp):
                                 "content": content
                             })
 
-        return results
+        return {"search_results": results}
 
     # ------
     # now for the secret sauce!
@@ -209,7 +209,7 @@ def register_mcp(mcp):
             os.mkdir(os.path.join(DATA_PATH, type_name_plural))
 
         # create wrapper function for: get categories
-        def dyn_func1(_type=type_name_plural) -> list:
+        def dyn_func1(_type=type_name_plural) -> dict:
             return get_data_categories(_type)
         # then register it to the mcp server
         mcp.tool(
@@ -223,7 +223,7 @@ def register_mcp(mcp):
         # repeat for all other data functions
 
         # add data entry
-        def dyn_func2(category: str, name: str, content: str, _type=type_name_plural) -> str:
+        def dyn_func2(category: str, name: str, content: str, _type=type_name_plural) -> dict:
             return add_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func2,
@@ -238,7 +238,7 @@ please use markdown format!
         )
 
         # get entries
-        def dyn_func3(category: str, _type=type_name_plural) -> list:
+        def dyn_func3(category: str, _type=type_name_plural) -> dict:
             return get_data_entries(_type, category)
         mcp.tool(
             dyn_func3,
@@ -249,7 +249,7 @@ please use markdown format!
         )
 
         # rename category
-        def dyn_func4(category: str, category_new: str, _type=type_name_plural) -> str:
+        def dyn_func4(category: str, category_new: str, _type=type_name_plural) -> dict:
             return rename_data_category(_type, category, category_new)
         mcp.tool(
             dyn_func4,
@@ -260,7 +260,7 @@ please use markdown format!
         )
 
         # delete category
-        def dyn_func5(category: str, _type=type_name_plural) -> str:
+        def dyn_func5(category: str, _type=type_name_plural) -> dict:
             return delete_data_category(_type, category)
         mcp.tool(
             dyn_func5,
@@ -271,7 +271,7 @@ please use markdown format!
         )
 
         # get singular entry
-        def dyn_func6(category: str, name: str, _type=type_name_plural) -> str:
+        def dyn_func6(category: str, name: str, _type=type_name_plural) -> dict:
             return get_data_entry(category, name, _type)
         mcp.tool(
             dyn_func6,
@@ -282,18 +282,18 @@ please use markdown format!
         )
 
         # edit entry
-        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural) -> str:
+        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural) -> dict:
             return edit_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func7,
             name=f"edit_{type_name_singular}",
-            description=f"edits an existing {type_name_singular}. please use markdown format!",
+            description=f"edits an existing {type_name_singular}. please use markdown format! {additional_instructions}",
             tags=["database"],
             exclude_args=["_type"]
         )
 
         # delete entry
-        def dyn_func8(category: str, name: str, _type=type_name_plural) -> str:
+        def dyn_func8(category: str, name: str, _type=type_name_plural) -> dict:
             return delete_data_entry(_type, category, name)
         mcp.tool(
             dyn_func8,
@@ -304,7 +304,7 @@ please use markdown format!
         )
         
         # search for entry
-        def dyn_func9(query: str, _type=type_name_plural) -> list:
+        def dyn_func9(query: str, _type=type_name_plural) -> dict:
             return search_in_data(_type, query)
         mcp.tool(
             dyn_func9,

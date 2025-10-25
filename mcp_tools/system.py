@@ -13,10 +13,10 @@ OS = platform.system().lower()
 def register_mcp(mcp):
     # --- information ---
     @mcp.tool()
-    def get_datetime() -> str:
+    def get_datetime() -> dict:
         """gets the current time and date"""
 
-        return datetime.datetime.now().strftime("%H:%M %d-%M-%Y")
+        return {"date": datetime.datetime.now().strftime("%H:%M %d-%M-%Y")}
 
     @mcp.tool()
     def get_system_info() -> dict:
@@ -83,7 +83,7 @@ def register_mcp(mcp):
         return data
 
     @mcp.tool()
-    def get_disk_usage() -> list:
+    def get_disk_usage() -> dict:
         """returns information about disk space usage"""
 
         if OS in ("linux", "darwin"):
@@ -93,7 +93,7 @@ def register_mcp(mcp):
 
     # --- processes ---
     @mcp.tool()
-    def get_running_system_processes() -> list:
+    def get_running_system_processes() -> dict:
         """returns processes that are running as the root user"""
 
         if OS in ("linux", "darwin"):
@@ -103,7 +103,7 @@ def register_mcp(mcp):
             return utils.sh_exec("tasklist")
 
     @mcp.tool()
-    def get_running_user_processes() -> list:
+    def get_running_user_processes() -> dict:
         """returns processes running under user's account"""
 
         if OS == "windows":
@@ -113,14 +113,14 @@ def register_mcp(mcp):
             return utils.sh_exec("ps -xo pid,comm,%cpu,%mem --sort=-%cpu")
 
     @mcp.tool()
-    def get_home_dir_path() -> str:
+    def get_home_dir_path() -> dict:
         """get path to user's home directory"""
 
-        return os.path.expanduser("~")
+        return {"home_path": os.path.expanduser("~")}
 
     # --- system control ---
     @mcp.tool()
-    def kill_process(pid: int = None, process_name: str = None) -> list:
+    def kill_process(pid: int = None, process_name: str = None) -> dict:
         """
         kill a process by either pid or name.
         returns a bool representing if it was successful.
@@ -142,7 +142,7 @@ def register_mcp(mcp):
         return False
 
     @mcp.tool()
-    def lock_screen() -> list:
+    def lock_screen() -> dict:
         """
         locks the user's pc screen
         """
@@ -161,7 +161,7 @@ def register_mcp(mcp):
     # because we check later on if we want to
     # register these tools with the mcp server
     # based on if user's OS is linux
-    def get_linux_distro():
+    def get_linux_distro() -> dict:
         try:
             distro_info = platform.freedesktop_os_release()
             distro = distro_info['ID']
@@ -172,7 +172,7 @@ def register_mcp(mcp):
         except Exception as e:
             return False
 
-    def get_system_diagnostic_info_linux():
+    def get_system_diagnostic_info_linux() -> dict:
         """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
 
         return {
@@ -184,11 +184,11 @@ def register_mcp(mcp):
             "lsipc": utils.sh_exec("lsipc")
         }
 
-    def fetch_man_page(cmd: str) -> list:
+    def fetch_man_page(cmd: str) -> dict:
         """returns a unix manpage for a specified command"""
 
         if OS not in ("linux", "darwin"):
-            return "this is not a linux or mac system, man pages are not available"
+            return {"error": "this is not a linux or mac system, man pages are not available"}
 
         cmd = cmd.split(" ")[0]
 
@@ -199,7 +199,7 @@ def register_mcp(mcp):
 
         return dict(os.environ)
 
-    def list_logged_in_users() -> list:
+    def list_logged_in_users() -> dict:
         """get users currently logged in to user's linux system"""
 
         return utils.sh_exec("w")
@@ -248,7 +248,7 @@ def register_mcp(mcp):
 
         return result
 
-    def flatpak_install_package(name: str):
+    def flatpak_install_package(name: str) -> dict:
         """install a flatpak package"""
 
         # only add this to the mcp tools if flatpak is detected
@@ -256,18 +256,18 @@ def register_mcp(mcp):
 
         return utils.sh_exec(f"flatpak install --noninteractive {name}")
 
-    def flatpak_remove_package(name: str) -> list:
+    def flatpak_remove_package(name: str) -> dict:
         """remove a flatpak package"""
 
         return utils.sh_exec(f"flatpak uninstall --noninteractive {name}")
 
     # --- systemd services ---
-    def list_user_services() -> list:
+    def list_user_services() -> dict:
         """list systemd user services"""
 
         return utils.sh_exec("systemctl --user list-unit-files --type service")
 
-    def list_system_services() -> list:
+    def list_system_services() -> dict:
         """list systemd system services"""
 
         return utils.sh_exec("systemctl list-unit-files --type service")
@@ -276,87 +276,87 @@ def register_mcp(mcp):
         """get the status of a systemd system service"""
 
         return {
-                "status": utils.sh_exec(f"systemctl status {name}"),
-                "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
+            "status": utils.sh_exec(f"systemctl status {name}"),
+            "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
         }
 
     def user_service_status(name: str) -> dict:
         """get the status of a systemd user service"""
 
         return {
-                "status": utils.sh_exec(f"systemctl --user status {name}"),
-                "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
+            "status": utils.sh_exec(f"systemctl --user status {name}"),
+            "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
         }
 
-    def start_user_service(name: str) -> list:
+    def start_user_service(name: str) -> dict:
         """start a systemd user service"""
 
-        if OS == "windows":
-            return utils.sh_exec(f"sc start {name}")
+        if OS == "linux":
+            return utils.sh_exec(f"systemctl --user -v start {name}")
         elif OS == "darwin":
             return utils.sh_exec(f"launchctl load -w /Library/LaunchDaemons/{name}.plist")
-        else:  # Linux
-            return utils.sh_exec(f"systemctl --user start {name}")
+        elif OS == "windows":
+            return utils.sh_exec(f"sc start {name}")
 
-    def restart_user_service(name: str) -> list:
+    def restart_user_service(name: str) -> dict:
         """restart a systemd user service"""
 
-        return utils.sh_exec(f"systemctl --user restart {name}")
+        return utils.sh_exec(f"systemctl --user -v restart {name}")
 
-    def stop_user_service(name: str) -> list:
+    def stop_user_service(name: str) -> dict:
         """stop a systemd user service"""
 
-        return utils.sh_exec(f"systemctl --user stop {name}")
+        return utils.sh_exec(f"systemctl --user -v stop {name}")
 
-    def kill_user_service(name: str) -> list:
+    def kill_user_service(name: str) -> dict:
        """forcefully kill a systemd user service"""
     
        return utils.sh_exec(f"systemctl --user kill {name}")
 
-    def systemd_user_logs() -> list:
+    def systemd_user_logs() -> dict:
         """returns systemd user level logs (last 1000 lines)"""
 
         return utils.sh_exec("journalctl --user -b -n1000")
-    def systemd_kernel_logs() -> list:
+    def systemd_kernel_logs() -> dict:
         """returns systemd kernel logs (journalctl -k)"""
 
         return utils.sh_exec("journalctl -k")
 
     # --- network control ---
-    def turn_network_off():
+    def turn_network_off() -> dict:
         """turns off user's internet"""
         return utils.sh_exec("nmcli network off")
-    def turn_network_on():
+    def turn_network_on() -> dict:
         """turns on user's internet"""
         return utils.sh_exec("nmcli network on")
 
     # --- media control ---
-    def media_currently_playing() -> list:
+    def media_currently_playing() -> dict:
         """fetch what media is currently playing on user's device"""
 
         return utils.sh_exec("playerctl metadata")
 
-    def media_toggle_pause():
+    def media_toggle_pause() -> dict:
         """toggle media play/pause"""
 
         return utils.sh_exec("playerctl play-pause")
 
-    def media_next():
+    def media_next() -> dict:
         """skip to next media"""
 
         return utils.sh_exec("playerctl next")
 
-    def media_previous():
+    def media_previous() -> dict:
         """go back to previous media"""
 
         return utils.sh_exec("playerctl previous")
 
-    def media_toggle_shuffle():
+    def media_toggle_shuffle() -> dict:
         """toggle media player shuffle"""
 
         return utils.sh_exec("playerctl shuffle Toggle")
 
-    def media_stop():
+    def media_stop() -> dict:
         """stop playing media"""
         return utils.sh_exec("playerctl stop")
 
