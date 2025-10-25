@@ -1,4 +1,5 @@
 import os
+import shutil
 import utils
 import datetime
 
@@ -89,12 +90,12 @@ def register_mcp(mcp):
 
         return "success"
     
-    def delete_data_category(type_name_plural: str, category_name: str):
+    def delete_data_category(type_name_plural: str, category: str):
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
             return "no such category!"
 
         try:
-            os.rmtree(os.path.join(DATA_PATH, type_name_plural, category))
+            shutil.rmtree(os.path.join(DATA_PATH, type_name_plural, category))
         except Exception as e:
             return f"error: {e}"
 
@@ -208,13 +209,13 @@ def register_mcp(mcp):
             os.mkdir(os.path.join(DATA_PATH, type_name_plural))
 
         # create wrapper function for: get categories
-        def dyn_func1(_type=type_name_plural):
+        def dyn_func1(_type=type_name_plural) -> list:
             return get_data_categories(_type)
         # then register it to the mcp server
         mcp.tool(
             dyn_func1,
             name=f"get_{type_name_plural}",
-            description=f"returns all {type_name_plural}",
+            description=f"lists all {type_name_plural}",
             tags=["database"],
             exclude_args=["_type"]
         )
@@ -222,7 +223,7 @@ def register_mcp(mcp):
         # repeat for all other data functions
 
         # add data entry
-        def dyn_func2(category: str, name: str, content: str, _type=type_name_plural):
+        def dyn_func2(category: str, name: str, content: str, _type=type_name_plural) -> str:
             return add_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func2,
@@ -237,7 +238,7 @@ please use markdown format!
         )
 
         # get entries
-        def dyn_func3(category: str, _type=type_name_plural):
+        def dyn_func3(category: str, _type=type_name_plural) -> list:
             return get_data_entries(_type, category)
         mcp.tool(
             dyn_func3,
@@ -248,7 +249,7 @@ please use markdown format!
         )
 
         # rename category
-        def dyn_func4(category: str, category_new: str, _type=type_name_plural):
+        def dyn_func4(category: str, category_new: str, _type=type_name_plural) -> str:
             return rename_data_category(_type, category, category_new)
         mcp.tool(
             dyn_func4,
@@ -259,7 +260,7 @@ please use markdown format!
         )
 
         # delete category
-        def dyn_func5(category: str, _type=type_name_plural):
+        def dyn_func5(category: str, _type=type_name_plural) -> str:
             return delete_data_category(_type, category)
         mcp.tool(
             dyn_func5,
@@ -270,7 +271,7 @@ please use markdown format!
         )
 
         # get singular entry
-        def dyn_func6(category: str, name: str, _type=type_name_plural):
+        def dyn_func6(category: str, name: str, _type=type_name_plural) -> str:
             return get_data_entry(category, name, _type)
         mcp.tool(
             dyn_func6,
@@ -281,7 +282,7 @@ please use markdown format!
         )
 
         # edit entry
-        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural):
+        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural) -> str:
             return edit_data_entry(_type, category, name, content)
         mcp.tool(
             dyn_func7,
@@ -292,7 +293,7 @@ please use markdown format!
         )
 
         # delete entry
-        def dyn_func8(category: str, name: str, _type=type_name_plural):
+        def dyn_func8(category: str, name: str, _type=type_name_plural) -> str:
             return delete_data_entry(_type, category, name)
         mcp.tool(
             dyn_func8,
@@ -303,7 +304,7 @@ please use markdown format!
         )
         
         # search for entry
-        def dyn_func9(query: str, _type=type_name_plural):
+        def dyn_func9(query: str, _type=type_name_plural) -> list:
             return search_in_data(_type, query)
         mcp.tool(
             dyn_func9,
