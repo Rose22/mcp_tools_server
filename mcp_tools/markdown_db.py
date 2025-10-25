@@ -77,6 +77,29 @@ def register_mcp(mcp):
         except Exception as e:
             return [f"error: {e}"]
 
+    def rename_data_category(type_name_plural: str, category: str, category_new: str):
+        """rename a category"""
+        if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
+            return "no such category!"
+
+        try:
+            shutil.move(os.path.join(DATA_PATH, type_name_plural, category), os.path.join(DATA_PATH, type_name_plural, category_new))
+        except Exception as e:
+            return f"error: {e}"
+
+        return "success"
+    
+    def delete_data_category(type_name_plural: str, category_name: str):
+        if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
+            return "no such category!"
+
+        try:
+            os.rmtree(os.path.join(DATA_PATH, type_name_plural, category))
+        except Exception as e:
+            return f"error: {e}"
+
+        return "success"
+
     def get_data_entry(type_name_plural: str, category: str, name: str):
         """gets the content of a data entry"""
 
@@ -224,11 +247,33 @@ please use markdown format!
             exclude_args=["_type"]
         )
 
-        # get singular entry
-        def dyn_func4(category: str, name: str, _type=type_name_plural):
-            return get_data_entry(category, name, _type)
+        # rename category
+        def dyn_func4(category: str, category_new: str, _type=type_name_plural):
+            return rename_data_category(_type, category, category_new)
         mcp.tool(
             dyn_func4,
+            name=f"rename_{type_name_singular}_category",
+            description=f"""renames a {type_name_singular} category""",
+            tags=["database"],
+            exclude_args=["_type"]
+        )
+
+        # delete category
+        def dyn_func5(category: str, _type=type_name_plural):
+            return delete_data_category(_type, category)
+        mcp.tool(
+            dyn_func5,
+            name=f"delete_{type_name_singular}_category",
+            description=f"""deletes a {type_name_singular} category""",
+            tags=["database"],
+            exclude_args=["_type"]
+        )
+
+        # get singular entry
+        def dyn_func6(category: str, name: str, _type=type_name_plural):
+            return get_data_entry(category, name, _type)
+        mcp.tool(
+            dyn_func6,
             name=f"read_{type_name_singular}",
             description=f"reads a {type_name_singular} that's already in storage",
             tags=["database"],
@@ -236,10 +281,10 @@ please use markdown format!
         )
 
         # edit entry
-        def dyn_func5(category: str, name: str, content: str, _type=type_name_plural):
+        def dyn_func7(category: str, name: str, content: str, _type=type_name_plural):
             return edit_data_entry(_type, category, name, content)
         mcp.tool(
-            dyn_func5,
+            dyn_func7,
             name=f"edit_{type_name_singular}",
             description=f"edits an existing {type_name_singular}. please use markdown format!",
             tags=["database"],
@@ -247,10 +292,10 @@ please use markdown format!
         )
 
         # delete entry
-        def dyn_func6(category: str, name: str, _type=type_name_plural):
+        def dyn_func8(category: str, name: str, _type=type_name_plural):
             return delete_data_entry(_type, category, name)
         mcp.tool(
-            dyn_func6,
+            dyn_func8,
             name=f"delete_{type_name_singular}",
             description=f"deletes a {type_name_singular} by name",
             tags=["database"],
@@ -258,10 +303,10 @@ please use markdown format!
         )
         
         # search for entry
-        def dyn_func7(query: str, _type=type_name_plural):
+        def dyn_func9(query: str, _type=type_name_plural):
             return search_in_data(_type, query)
         mcp.tool(
-            dyn_func7,
+            dyn_func9,
             name=f"search_{type_name_plural}",
             description=f"searches within the name and contents of all stored {type_name_plural} for your given query",
             tags=["database"],
