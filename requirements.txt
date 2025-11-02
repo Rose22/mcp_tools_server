@@ -39,7 +39,6 @@ lazy-object-proxy==1.12.0
 markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mcp==1.16.0
-mcpo==0.0.19
 mdurl==0.1.2
 more-itertools==10.8.0
 moviepy==2.2.1
