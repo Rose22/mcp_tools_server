@@ -33,16 +33,15 @@ def sh_exec(cmd) -> dict:
 
     console_log(f"sh: {cmd}")
     try:
-        result = subprocess.run(cmd.split(" "), capture_output=True, text=True)
-        result.check_returncode()
+        proc = subprocess.run(cmd.split(" "), capture_output=True, text=True)
     except Exception as e:
         return {"error": f"error while executing command '{cmd}': {e}"}
 
     results = {}
-    results['output'] = result.stdout.split("\n")
+    results['output'] = proc.stdout.splitlines()
 
-    if len(result.stderr) > 0:
-        results['errors'] = result.stderr.split("\n")
+    if len(proc.stderr) > 0:
+        results['errors'] = proc.stderr.splitlines()
 
     return result(results)
 
