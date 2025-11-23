@@ -85,6 +85,9 @@ def register_mcp(mcp):
         return utils.result(results)
 
     def rename_data_category(type_name_plural: str, category: str, category_new: str) -> dict:
+        category = utils.strip_filename(category)
+        category_new = utils.strip_filename(category_new)
+
         """rename a category"""
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
             return utils.result(None, "no such category!")
@@ -97,6 +100,8 @@ def register_mcp(mcp):
         return utils.result(True)
     
     def delete_data_category(type_name_plural: str, category: str) -> dict:
+        category = utils.strip_filename(category)
+
         if not os.path.exists(os.path.join(DATA_PATH, type_name_plural, category)):
             return utils.result(None, "no such category!")
 
@@ -148,6 +153,8 @@ def register_mcp(mcp):
 
         utils.console_log(f"searching {type_name_plural} for {query}")
 
+        query = utils.strip_filename(query)
+
         results = []
         for category in os.listdir(os.path.join(DATA_PATH, type_name_plural)):
             for entry_filename in os.listdir(os.path.join(DATA_PATH, type_name_plural, category)):
@@ -190,7 +197,7 @@ def register_mcp(mcp):
                                 "error": e
                             })
                     else:
-                        if query in filename:
+                        if utils.strip_filename(query) in filename:
                             try:
                                 content = open(os.path.join(DATA_PATH, type_name_plural, category, filename), 'r').read()
                             except:
@@ -321,12 +328,12 @@ please use markdown format!
     # add data types here!
     # ----------------------
     add_data_type(mcp, "notes", "note")
-    add_data_type(mcp, "tasks", "task")
-    add_data_type(mcp, "ideas", "idea")
-    add_data_type(mcp, "checklists", "checklist")
-    add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
-    add_data_type(mcp, "events", "event", additional_instructions="always add a date and time, and include it in the name of the note")
-    add_data_type(mcp, "contacts", "contact")
-    add_data_type(mcp, "conversation_logs", "conversation_log")
+    #add_data_type(mcp, "tasks", "task")
+    #add_data_type(mcp, "ideas", "idea")
+    add_data_type(mcp, "lists", "list", additional_instructions="always format it as a bullet list, optionally split into categories using markdown headers")
+    #add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
+    #add_data_type(mcp, "events", "event", additional_instructions="always add a date and time, and include it in the name of the note")
+    #add_data_type(mcp, "contacts", "contact")
+    #add_data_type(mcp, "conversation_logs", "conversation_log")
     add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="always include the original URL and a description of the bookmark")
     add_data_type(mcp, "recipes", "recipe", additional_instructions="format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions")
