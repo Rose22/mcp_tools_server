@@ -2,7 +2,7 @@ import subprocess
 import os
 
 def get_root_path():
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.dirname(os.path.abspath(__file__))
 
 def get_data_path():
     path = os.path.join(get_root_path(), "data")
