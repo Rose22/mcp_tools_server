@@ -56,16 +56,10 @@ async def search_web(query: str, purpose: str, memory: str, limit: int = 4):
 
         processed_urls.append(url)
 
-    searchresults = await reader.read_multiple_files_or_urls(
+    return await reader.read_multiple_files_or_urls(
         # limit amount of results returned
         processed_urls[:limit], purpose, memory
     )
-
-    return {
-        "results": searchresults,
-        "important_details": memory,
-        "purpose_of_request": purpose
-    }
 
 def register_mcp(mcp):
     mcp.tool(search_web)
