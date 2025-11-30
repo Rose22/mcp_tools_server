@@ -336,4 +336,5 @@ please use markdown format!
     #add_data_type(mcp, "contacts", "contact")
     #add_data_type(mcp, "conversation_logs", "conversation_log")
     add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="always include the original URL and a description of the bookmark")
+    add_data_type(mcp, "prompts", "prompt")
     add_data_type(mcp, "recipes", "recipe", additional_instructions="format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions")

@@ -28,7 +28,7 @@ def strip_filename(filename):
 def console_log(text):
     print(f"\033[1;34m[MCP] {text}\033[0m")
 
-def sh_exec(cmd) -> dict:
+def sh_exec(cmd):
     """executes a command and returns the output as a string"""
 
     console_log(f"sh: {cmd}")
@@ -37,13 +37,23 @@ def sh_exec(cmd) -> dict:
     except Exception as e:
         return {"error": f"error while executing command '{cmd}': {e}"}
 
-    results = {}
-    results['output'] = proc.stdout.splitlines()
+    cmd_result = proc.stdout.splitlines()
+    if len(cmd_result) == 0:
+        # just return the output as a string if it was only one line
+        cmd_result = cmd_result[0]
 
-    if len(proc.stderr) > 0:
-        results['errors'] = proc.stderr.splitlines()
+    if cmd_result:
+        return cmd_result
+    elif len(proc.stderr) > 0:
+        cmd_result = proc.stderr.splitlines()
+    else:
+        return f"unknown error!: {cmd_result}"
 
-    return result(results)
+def sh_exec_result(cmd) -> dict:
+    return result({
+        "cmd": cmd,
+        "output": sh_exec(cmd)
+    })
 
 def sizeof_format(num, suffix="B"):
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):

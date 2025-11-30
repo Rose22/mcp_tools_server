@@ -13,19 +13,19 @@ def register_mcp(mcp):
         if OS == "linux":
             if shutil.which("nmcli"):
                 # if network manager is installed, that gives better info
-                return utils.sh_exec("nmcli -o")
+                return utils.sh_exec_result("nmcli -o")
             else:
-                return utils.sh_exec("ip addr")
+                return utils.sh_exec_result("ip addr")
         elif OS == "windows":
-            return utils.sh_exec("ipconfig")
+            return utils.sh_exec_result("ipconfig")
         elif OS == "darwin":
-            return utils.sh_exec("ifconfig")
+            return utils.sh_exec_result("ifconfig")
 
     @mcp.tool()
     def ping(addr: str) -> dict:
         """pings a specified IP address or domain"""
 
-        result = utils.sh_exec(f"ping -c 1 {addr}")
+        result = utils.sh_exec_result(f"ping -c 1 {addr}")
         if len(result) <= 1:
             return utils.result(None, "could not reach address")
         return utils.result(result)
@@ -33,14 +33,14 @@ def register_mcp(mcp):
     @mcp.tool()
     def list_open_ports() -> dict:
         """list currently open ports on user's pc"""
-        return utils.sh_exec(f"lsof -i")
+        return utils.sh_exec_result(f"lsof -i")
 
     @mcp.tool()
     def traceroute(addr: str) -> dict:
         """performs a traceroute on an ip address or domain"""
-        return utils.sh_exec(f"traceroute {addr}")
+        return utils.sh_exec_result(f"traceroute {addr}")
 
     @mcp.tool()
     def whois(addr: str) -> dict:
         """performs a WHOIS request on an ip address or domain"""
-        return utils.sh_exec(f"whois {addr}")
+        return utils.sh_exec_result(f"whois {addr}")
