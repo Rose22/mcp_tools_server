@@ -518,7 +518,7 @@ async def read_file_or_url(
     if not multi:
         result["ai_instructions"] = {
             "important_details": memory,
-            "purpose_ofutils.http_request": purpose,
+            "purpose_of_request": purpose,
         }
         utils.console_log("done processing")
         return utils.result(result)
@@ -570,7 +570,7 @@ async def read_multiple_files_or_urls(
         "results": output,
         "ai_instructions": {
             "important_details": memory,
-            "purpose_ofutils.http_request": f"{purpose}. Include links to all sources.",
+            "purpose_of_request": f"{purpose}. Include links to all sources.",
         },
     }
 
