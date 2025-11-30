@@ -4,7 +4,7 @@ import urllib
 
 from mcp_tools import reader
 
-async def search_web(query, purpose, memory, limit=4):
+async def search_web(query: str, purpose: str, memory: str, limit: int = 4):
     """
     search the web for a query. uses read_path internally to process the resulting page.
 
