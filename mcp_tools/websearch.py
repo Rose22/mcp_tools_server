@@ -62,9 +62,9 @@ async def search_web(query: str, purpose: str, memory: str, limit: int = 4):
     )
 
     return {
+        "results": searchresults,
         "important_details": memory,
-        "purpose_of_request": purpose,
-        "results": searchresults
+        "purpose_of_request": purpose
     }
 
 def register_mcp(mcp):
