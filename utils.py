@@ -1,5 +1,6 @@
 import subprocess
 import os
+import aiohttp
 
 def get_root_path():
     return os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +25,15 @@ def result(obj, error=None):
 
 def strip_filename(filename):
     return filename.strip().lower().replace(" ", "_")
+
+def remove_duplicates(lst: list):
+    # removes duplicates from a list
+
+    new_lst = []
+    for item in lst:
+        if item not in new_lst:
+            new_lst.append(item)
+    return new_lst
 
 def console_log(text):
     print(f"\033[1;34m[MCP] {text}\033[0m")
@@ -54,6 +64,67 @@ def sh_exec_result(cmd) -> dict:
         "cmd": cmd,
         "output": sh_exec(cmd)
     })
+
+async def http_request(url):
+    console_log("fetching remote content..")
+
+    async with aiohttp.ClientSession(
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.3"}
+    ) as session:
+        async with session.get(url, timeout=10) as response:
+            if response.status != 200:
+                raise Exception(f"Request failed with status {response.status}")
+            return await response.read()
+
+def sh_exec_sandbox(command, timeout=30, workdir=None) -> dict:
+    """
+    Safely execute shell command with multiple layers of protection
+    """
+    if workdir is None:
+        workdir = tempfile.mkdtemp()
+
+    # Command validation
+    dangerous_patterns = ['rm -rf', 'dd if=', 'mkfs', ':(){:|:&};:', 'wget', 'curl']
+    for pattern in dangerous_patterns:
+        if pattern in command.lower():
+            raise SecurityError(f"Dangerous command pattern detected: {pattern}")
+
+    # Restricted environment
+    safe_env = {
+        'PATH': '/usr/bin:/bin',
+        'HOME': workdir,
+        'USER': 'nobody',
+        'LOGNAME': 'nobody',
+        'SHELL': '/bin/sh'
+    }
+
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            env=safe_env,
+            timeout=timeout,
+            capture_output=True,
+            text=True,
+            cwd=workdir,
+            preexec_fn=os.setsid  # New process group
+        )
+
+        return {
+            'returncode': result.returncode,
+            'stdout': result.stdout,
+            'stderr': result.stderr,
+            'timed_out': False
+        }
+
+    except subprocess.TimeoutExpired:
+        return {'returncode': -1, 'stdout': '', 'stderr': 'Command timed out', 'timed_out': True}
+    except Exception as e:
+        return {'returncode': -1, 'stdout': '', 'stderr': str(e), 'timed_out': False}
+    finally:
+        # Cleanup
+        if os.path.exists(workdir) and workdir.startswith('/tmp'):
+            subprocess.run(['rm', '-rf', workdir])
 
 def sizeof_format(num, suffix="B"):
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):

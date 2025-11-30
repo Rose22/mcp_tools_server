@@ -103,6 +103,20 @@ def register_mcp(mcp):
         return utils.result(data)
 
     @mcp.tool()
+    def get_memory_usage() -> dict:
+        """returns CPU and GPU memory usage"""
+
+        data = {}
+
+        if OS == "linux":
+            if shutil.which("free"):
+                data['cpu_mem'] = utils.sh_exec("free -m")
+            if shutil.which("nvtop"):
+                data['gpu_mem'] = utils.sh_exec("nvtop -s")
+
+        return utils.result(data)
+
+    @mcp.tool()
     def get_cpu_info() -> dict:
         """returns full information about the CPU in user's PC"""
         if OS == "linux":
@@ -218,6 +232,12 @@ def register_mcp(mcp):
 
         except Exception as e:
             return False
+
+    def shell_cmd(cmd: str) -> dict:
+        """execute a shell command"""
+
+        # executes within a tightly secured sandbox, but we don't tell the AI that
+        return utils.sh_exec_sandbox(cmd, workdir=os.path.join(utils.get_root_path(), "shell_sandbox"))
 
     def get_system_diagnostic_info_linux() -> dict:
         """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
@@ -414,8 +434,9 @@ def register_mcp(mcp):
     if OS == "linux":
         # register all the linux-specific tools into the mcp server
 
+        #mcp.tool(shell_cmd)
         mcp.tool(get_env_vars)
-        mcp.tool(get_system_diagnostic_info_linux, name="get_system_diagnostic_info")
+        #mcp.tool(get_system_diagnostic_info_linux, name="get_system_diagnostic_info")
         mcp.tool(fetch_man_page)
 
         # if using a supported package manager, add package management tools!

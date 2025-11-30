@@ -8,26 +8,6 @@ import aiohttp
 import urllib
 import json
 
-def remove_duplicates(lst: list):
-    # removes duplicates from a list
-
-    new_lst = []
-    for item in lst:
-        if item not in new_lst:
-            new_lst.append(item)
-    return new_lst
-
-async def _request(url):
-    utils.console_log("fetching remote content..")
-
-    async with aiohttp.ClientSession(
-        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.3"}
-    ) as session:
-        async with session.get(url, timeout=10) as response:
-            if response.status != 200:
-                raise Exception(f"Request failed with status {response.status}")
-            return await response.read()
-
 async def process_webpage(html):
     # uses beautifulsoup to scrape a webpage
 
@@ -70,7 +50,7 @@ async def process_webpage(html):
         if category == "title":
             continue
 
-        output[category] = remove_duplicates(output[category])
+        output[category] = utils.remove_duplicates(output[category])
 
     # but not always...
     if "headers" not in output.keys() and "paragraphs" not in output.keys():
@@ -100,7 +80,7 @@ async def process_webpage(html):
                 continue
 
             # remove duplicates
-            output["classes"][class_name] = remove_duplicates(
+            output["classes"][class_name] = utils.remove_duplicates(
                 output["classes"][class_name]
             )
 
@@ -116,7 +96,7 @@ async def process_webpage(html):
                 output["urls"].append(a["href"])
 
             # remove duplicate links
-            output["urls"] = remove_duplicates(output["urls"])
+            output["urls"] = utils.remove_duplicates(output["urls"])
 
             if not output["urls"]:
                 # alright, theres no saving this one. at least we have a title!
@@ -128,48 +108,7 @@ async def process_webpage(html):
 
     return output
 
-async def process_search(url):
-    html = await _request(url)
-
-    output = []
-
-    import re
-    from bs4 import BeautifulSoup
-
-    soup = await asyncio.to_thread(BeautifulSoup, html, "html.parser")
-
-    urls = []
-
-    headers = []
-    for header in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
-        headers.append(header.get_text().strip())
-
-    for a in soup.find_all("a", href=True):
-        urls.append(a["href"])
-
-    urls = remove_duplicates(urls)
-
-    processed_urls = []
-    for url in urls:
-        # get rid of duckduckgo's garbage
-        url = url.replace("//duckduckgo.com", "")
-        url = url.replace("/l/?uddg=", "")
-
-        url = urllib.parse.unquote(url)
-
-        # more garbage
-        url = url.split("&rut")[0]
-
-        if url in ["/html/", "/feedback.html"]:
-            continue
-
-        processed_urls.append(url)
-
-    return await read_multiple_files_or_urls(
-        processed_urls, purpose, memory
-    )
-
-async def process_domains(domain, url):
+async def process_domains(domain, url, purpose, memory):
     if "youtube" in domain and "watch" in url or "youtu.be" in domain:
         # this is a youtube link. try and get the transcript!
         import youtube_transcript_api
@@ -203,7 +142,7 @@ async def process_domains(domain, url):
         # get video title using beautifulsoup
         from bs4 import BeautifulSoup
 
-        html = await _request(url)
+        html = await utils.http_request(url)
         soup = await asyncio.to_thread(BeautifulSoup, html, "html.parser")
 
         title = soup.find("title").get_text().strip()
@@ -226,8 +165,6 @@ async def process_domains(domain, url):
             transcript_dict["error"] = err
 
         return transcript_dict
-    elif "duckduckgo" in domain:
-        return await process_search(url)
 
 async def process_text(file_content):
     return file_content.decode(errors="replace")
@@ -268,9 +205,9 @@ async def process_pdf(file_content):
     from io import BytesIO
     import pypdf
 
-    pdf_reader = pypdf.PdfReader(BytesIO(file_content))
+    pdfreader = pypdf.PdfReader(BytesIO(file_content))
     pages_text = []
-    for page in pdf_reader.pages:
+    for page in pdfreader.pages:
         text = page.extract_text()
         if text:
             pages_text.append(text)
@@ -281,8 +218,8 @@ async def process_audio(file_content):
     from io import BytesIO
     import tinytag
 
-    tag_reader = tinytag.TinyTag.get(file_obj=BytesIO(file_content))
-    return tag_reader.as_dict()
+    tagreader = tinytag.TinyTag.get(file_obj=BytesIO(file_content))
+    return tagreader.as_dict()
 
 async def process_video(file_content):
     import moviepy
@@ -352,310 +289,291 @@ async def process_exe(file_content):
 # ---------------------
 # --- MAIN FUNCTION ---
 # ---------------------
-def register_mcp(mcp):
-    @mcp.tool()
-    async def read_file_or_url(
-        path: str,
-        purpose: str,
-        memory: str,
-        multi: bool = False,
-    ):
-        """
-        processes any file or url user may have provided.
-        use the "purpose" argument to describe the purpose of this request.
-        use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
+async def read_file_or_url(
+    path: str,
+    purpose: str,
+    memory: str,
+    multi: bool = False,
+):
+    """
+    processes any file or url user may have provided.
+    use the "purpose" argument to describe the purpose of this request.
+    use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
 
-        will process:
-        - websites
-        - html
-        - xml
-        - markdown
-        - source code
-        - scripts
-        - json
-        - yaml
-        - ini
-        - csv
-        - logs
-        - images
-        - music
-        - videos
-        - PDFs
-        - documents
-        - archive files such as zip and rar
-        - youtube videos
-        - executables
-        """
+    will process:
+    - websites
+    - html
+    - xml
+    - markdown
+    - source code
+    - scripts
+    - json
+    - yaml
+    - ini
+    - csv
+    - logs
+    - images
+    - music
+    - videos
+    - PDFs
+    - documents
+    - archive files such as zip and rar
+    - youtube videos
+    - executables
+    """
 
-        utils.console_log(f"processing path: {path}")
+    utils.console_log(f"processing path: {path}")
 
-        output = {}
+    output = {}
 
-        # check if path is file or url
-        url_parser = urllib.parse.urlparse(path)
-        if url_parser.scheme != "":
-            # parse the URL
+    # check if path is file or url
+    url_parser = urllib.parse.urlparse(path)
+    if url_parser.scheme != "":
+        # parse the URL
 
-            domain = url_parser.netloc
-            file_name = url_parser.path.split("/")[-1]
-            file_name_split = file_name.split(".")
-            file_type = file_name_split[-1].lower() if len(file_name_split) > 1 else None
+        domain = url_parser.netloc
+        file_name = url_parser.path.split("/")[-1]
+        file_name_split = file_name.split(".")
+        file_type = file_name_split[-1].lower() if len(file_name_split) > 1 else None
 
-            # first, process any special domains, such as youtube
-            output = await process_domains(domain, path)
-            if output:
-                return utils.result(output)
+        # first, process any special domains, such as youtube
+        output = await process_domains(domain, path, purpose, memory)
+        if output:
+            return utils.result(output)
 
-            # then if that didn't do anything, switch to Processing based on file type
+        # then if that didn't do anything, switch to Processing based on file type
 
-            # get the content of whatever file is at the url
-            file_content = await _request(path)
+        # get the content of whatever file is at the url
+        file_content = await utils.http_request(path)
+    else:
+        # not a url
+        path = os.path.expanduser(path)
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                # this is a file
+                utils.console_log("reading local file..")
+
+                file_name, file_type = os.path.splitext(os.path.basename(path))
+                file_type = file_type.lstrip('.')
+                with open(path, 'rb') as f:
+                    file_content = f.read()
+            elif os.path.isdir(path):
+                return utils.list_dir(path)
         else:
-            # not a url
-            path = os.path.expanduser(path)
-            if os.path.exists(path):
-                if os.path.isfile(path):
-                    # this is a file
-                    utils.console_log("reading local file..")
+            # file not found!
+            return utils.result(None, "no such file or directory")
 
-                    file_name, file_type = os.path.splitext(os.path.basename(path))
-                    file_type = file_type.lstrip('.')
-                    with open(path, 'rb') as f:
-                        file_content = f.read()
-                elif os.path.isdir(path):
-                    return list_dir(path)
-            else:
-                # file not found!
-                return utils.result(None, "no such file or directory")
+    import hashlib
 
-        import hashlib
+    filetype_map = {
+        ("htm", "html", "xhtml", "php", "asp"): process_webpage,
+        (
+            "asm",
+            "bas",
+            "bat",
+            "c",
+            "cc",
+            "cfg",
+            "cgi",
+            "clj",
+            "conf",
+            "cpp",
+            "css",
+            "dart",
+            "diff",
+            "elm",
+            "erl",
+            "ex",
+            "fs",
+            "go",
+            "hs",
+            "ini",
+            "java",
+            "jl",
+            "js",
+            "json",
+            "kt",
+            "lisp",
+            "log",
+            "lua",
+            "m",
+            "md",
+            "ml",
+            "php",
+            "pl",
+            "ps1",
+            "psm1",
+            "patch",
+            "py",
+            "r",
+            "rb",
+            "rs",
+            "s1",
+            "scala",
+            "scm",
+            "sh",
+            "sql",
+            "swift",
+            "ts",
+            "txt",
+            "toml",
+            "tsx",
+            "vim",
+            "zsh",
+        ): process_text,
+        (
+            "jpg",
+            "jpeg",
+            "png",
+            "gif",
+            "bmp",
+            "svg",
+            "tiff",
+            "webp",
+            "ico",
+            "raw",
+            "heic",
+            "eps",
+            "ai",
+        ): process_image,
+        ("mp3", "m4a", "ogg", "flac", "wma", "aiff", "wav", "aac"): process_audio,
+        (
+            "mp4",
+            "mkv",
+            "mov",
+            "avi",
+            "wmv",
+            "mpeg",
+            "mpg",
+            "m4v",
+        ): process_video,
+        ("tar", "gz", "tgz"): process_tar,
+        (
+            "bin",
+            "exe",
+            "dll",
+            "elf",
+            "msi",
+            "com",
+            "cmd",
+            "msp",
+            "so",
+            "a",
+            "la",
+            "bin",
+            "dmg",
+            "app",
+            "appimage",
+            "flatpak",
+            "x64",
+            "x86",
+            "arm",
+            "jar",
+            "apk",
+            "deb",
+            "rpm",
+        ): process_exe,
+        ("zip",): process_zip,
+        ("rar",): process_rar,
+        ("xml",): process_xml,
+        ("yaml",): process_yaml,
+        ("csv",): process_csv,
+        ("pdf",): process_pdf,
+    }
 
-        filetype_map = {
-            ("htm", "html", "xhtml", "php", "asp"): process_webpage,
-            (
-                "asm",
-                "bas",
-                "bat",
-                "c",
-                "cc",
-                "cfg",
-                "cgi",
-                "clj",
-                "conf",
-                "cpp",
-                "css",
-                "dart",
-                "diff",
-                "elm",
-                "erl",
-                "ex",
-                "fs",
-                "go",
-                "hs",
-                "ini",
-                "java",
-                "jl",
-                "js",
-                "json",
-                "kt",
-                "lisp",
-                "log",
-                "lua",
-                "m",
-                "md",
-                "ml",
-                "php",
-                "pl",
-                "ps1",
-                "psm1",
-                "patch",
-                "py",
-                "r",
-                "rb",
-                "rs",
-                "s1",
-                "scala",
-                "scm",
-                "sh",
-                "sql",
-                "swift",
-                "ts",
-                "txt",
-                "toml",
-                "tsx",
-                "vim",
-                "zsh",
-            ): process_text,
-            (
-                "jpg",
-                "jpeg",
-                "png",
-                "gif",
-                "bmp",
-                "svg",
-                "tiff",
-                "webp",
-                "ico",
-                "raw",
-                "heic",
-                "eps",
-                "ai",
-            ): process_image,
-            ("mp3", "m4a", "ogg", "flac", "wma", "aiff", "wav", "aac"): process_audio,
-            (
-                "mp4",
-                "mkv",
-                "mov",
-                "avi",
-                "wmv",
-                "mpeg",
-                "mpg",
-                "m4v",
-            ): process_video,
-            ("tar", "gz", "tgz"): process_tar,
-            (
-                "bin",
-                "exe",
-                "dll",
-                "elf",
-                "msi",
-                "com",
-                "cmd",
-                "msp",
-                "so",
-                "a",
-                "la",
-                "bin",
-                "dmg",
-                "app",
-                "appimage",
-                "flatpak",
-                "x64",
-                "x86",
-                "arm",
-                "jar",
-                "apk",
-                "deb",
-                "rpm",
-            ): process_exe,
-            ("zip",): process_zip,
-            ("rar",): process_rar,
-            ("xml",): process_xml,
-            ("yaml",): process_yaml,
-            ("csv",): process_csv,
-            ("pdf",): process_pdf,
+    processor = None
+    for exts, fetched_processor in filetype_map.items():
+        if file_type in exts:
+            processor = fetched_processor
+            break
+
+    if processor:
+        utils.console_log("processing using "+processor.__name__)
+        output = await processor(file_content)
+    elif not file_type:
+        # for now, we assume it's a website.
+        # TODO: add mime type checking
+        utils.console_log("processing using process_webpage")
+        output = await process_webpage(file_content)
+
+        file_type = "website"
+    else:
+        # some unknown file format
+        # add MIME type-based Processing later
+        utils.console_log("could not find valid processor!")
+
+        output = (
+            "unsupported file format! you have to use another tool to process this."
+        )
+
+    result = {
+        "path": path,
+        "filename": file_name,
+        "type": file_type,
+        "size": len(file_content),
+        "checksum": hashlib.sha256(file_content).hexdigest(),
+        "data": output,
+    }
+
+    if not multi:
+        result["ai_instructions"] = {
+            "important_details": memory,
+            "purpose_ofutils.http_request": purpose,
         }
-
-        processor = None
-        for exts, fetched_processor in filetype_map.items():
-            if file_type in exts:
-                processor = fetched_processor
-                break
-
-        if processor:
-            utils.console_log("processing using "+processor.__name__)
-            output = await processor(file_content)
-        elif not file_type:
-            # for now, we assume it's a website.
-            # TODO: add mime type checking
-            utils.console_log("processing using process_webpage")
-            output = await process_webpage(file_content)
-
-            file_type = "website"
-        else:
-            # some unknown file format
-            # add MIME type-based Processing later
-            utils.console_log("could not find valid processor!")
-
-            output = (
-                "unsupported file format! you have to use another tool to process this."
-            )
-
-        result = {
-            "path": path,
-            "filename": file_name,
-            "type": file_type,
-            "size": len(file_content),
-            "checksum": hashlib.sha256(file_content).hexdigest(),
-            "data": output,
-        }
-
-        if not multi:
-            result["ai_instructions"] = {
-                "important_details": memory,
-                "purpose_of_request": purpose,
-            }
-
         utils.console_log("done processing")
-
         return utils.result(result)
+    else:
+        return result
 
-    @mcp.tool()
-    async def read_multiple_files_or_urls(
-        paths: list,
-        purpose: str,
-        memory: str
-    ):
-        """
-        processes multiple files or url's in sequence. can process the exact same data types as read_file_or_url.
-        use this instead of read_file_or_url if user provided multiple files or url's!
+async def read_multiple_files_or_urls(
+    paths: list,
+    purpose: str,
+    memory: str
+):
+    """
+    processes multiple files or url's in sequence. can process the exact same data types as read_file_or_url.
+    use this instead of read_file_or_url if user provided multiple files or url's!
 
-        use the "purpose" argument to describe the purpose of this request.
-        use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
-        """
+    use the "purpose" argument to describe the purpose of this request.
+    use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
+    """
 
-        output = []
+    output = []
 
-        utils.console_log("processing multiple files asynchronously..")
+    utils.console_log("processing multiple files asynchronously..")
 
-        # limit to 4 threads at once
-        semaphore = asyncio.Semaphore(4)
+    # limit to 4 threads at once
+    semaphore = asyncio.Semaphore(4)
 
-        async def handle_one(path, i):
-            async with semaphore:
-                try:
-                    # for if the AI adds the url as a dict for some reason. it often does that!
-                    path = path["path"]
-                except:
-                    pass
+    async def handle_one(path, i):
+        async with semaphore:
+            try:
+                # for if the AI adds the url as a dict for some reason. it often does that!
+                path = path["path"]
+            except:
+                pass
 
-                try:
-                    utils.console_log(f"thread {i}: launching..")
-                    result = await read_file_or_url(
-                        path, purpose, memory, multi=True
-                    )
-                    utils.console_log(f"thread {i}: finished!")
-                    return result
-                except Exception as e:
-                    return [f"ERROR Processing path {path}: {e}"]
+            try:
+                utils.console_log(f"thread {i}: launching..")
+                result = await read_file_or_url(
+                    path, purpose, memory, multi=True
+                )
+                utils.console_log(f"thread {i}: finished!")
+                return result
+            except Exception as e:
+                return [f"ERROR Processing path {path}: {e}"]
 
-        tasks = [handle_one(path, i) for i, path in enumerate(paths)]
-        output = await asyncio.gather(*tasks)
+    tasks = [handle_one(path, i) for i, path in enumerate(paths)]
+    output = await asyncio.gather(*tasks)
 
-        return {
-            "results": output,
-            "ai_instructions": {
-                "important_details": memory,
-                "purpose_of_request": f"{purpose}. Include links to all sources.",
-            },
-        }
+    return {
+        "results": output,
+        "ai_instructions": {
+            "important_details": memory,
+            "purpose_ofutils.http_request": f"{purpose}. Include links to all sources.",
+        },
+    }
 
-    # TODO: somehow move this to the search package
-    # @mcp.tool()
-    # async def search_web(
-    #     query: str,
-    #     purpose: str,
-    #     memory: str,
-    # ):
-    #     """
-    #     search the web for a query. uses read_path internally to process the resulting page.
-    #
-    #     use the "purpose" argument to describe the purpose of this request.
-    #     use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
-    #     """
-    #
-    #     return await read_file_or_url(
-    #         f"https://duckduckgo.com/html/?q={query.replace(' ', '+')}",
-    #         purpose,
-    #         memory,
-    #     )
+def register_mcp(mcp):
+    mcp.tool(read_file_or_url)
+    mcp.tool(read_multiple_files_or_urls)
