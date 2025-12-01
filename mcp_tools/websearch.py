@@ -6,7 +6,7 @@ from mcp_tools import reader
 
 async def search_web(query: str, purpose: str, memory: str, limit: int = 4):
     """
-    search the web for a query. uses read_path internally to process the resulting page.
+    search the web for a query. uses read_multiple_files_or_urls internally to process the resulting page.
 
     use the "purpose" argument to describe the purpose of this request.
     use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
