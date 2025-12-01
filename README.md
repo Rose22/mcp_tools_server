@@ -2,12 +2,15 @@
 
 this is a very flexible and capable MCP server intended to be run on your own device. it's inspired by classic AI assistants like Siri, Alexa and Google Assistant but adding an LLM to that mix turns it all up to 11!
 
+it's modular and you can turn any of the components on or off depending on what tools you need. if you prefer to just use the web search and url reading functionality, you can turn all the other modules off.
+
 unlike many solutions so far, this is independent of the UI you choose to use for your AI assistant because it's using MCP and can be plugged into any system that supports MCP.
 
 it's cross platform and what tools your LLM will see depends on what operating system you're using (windows, mac, or linux)
 
 it enables your chosen AI assistant to:
 
+- search the web using duckduckgo (no API key needed, we use page scraping)
 - browse, read and modify your files (with safety features such as automatic backups before modification)
 - read and process a wide range of file types (it can do things like look inside zip archives, see video metadata, stuff like that)
 - read and process remote URLs (links) of those same file types and with the same extraction abilities
