@@ -1,6 +1,7 @@
 import os
 import platform
 import shutil
+import psutil
 import datetime
 import json
 
@@ -10,426 +11,447 @@ OS = platform.system().lower()
 # temporary override
 #OS = "windows"
 
-def register_mcp(mcp):
-    # --- information ---
-    @mcp.tool()
-    def get_datetime() -> dict:
-        """gets the current time and date"""
+# --- information ---
+def get_datetime() -> dict:
+    """gets the current time and date"""
 
-        return utils.result(datetime.datetime.now().strftime("%H:%M %d-%M-%Y"))
+    return utils.result(datetime.datetime.now().strftime("%H:%M %d-%M-%Y"))
 
-    @mcp.tool()
-    def get_system_info() -> dict:
-        """returns information about user's PC"""
+def get_system_info() -> dict:
+    """returns information about user's PC"""
 
-        data = {
-            "os": OS,
-            "os_release": platform.release(),
-            "platform": platform.platform(),
-            "architecture": platform.machine() if platform.machine() else "unknown",
-            "hostname": platform.node(),
-            "home_dir": os.path.expanduser("~"),
-            #"processor": platform.processor(),
-            #"uname": platform.uname(),
-            #"python_version": platform.python_version(),
-            #"python_build": platform.python_build(),
-            #"python_implementation": platform.python_implementation(),
-        }
+    data = {
+        "os": OS,
+        "os_release": platform.release(),
+        "platform": platform.platform(),
+        "architecture": platform.machine() if platform.machine() else "unknown",
+        "hostname": platform.node(),
+        "home_dir": os.path.expanduser("~"),
+        #"processor": platform.processor(),
+        #"uname": platform.uname(),
+        #"python_version": platform.python_version(),
+        #"python_build": platform.python_build(),
+        #"python_implementation": platform.python_implementation(),
+    }
 
-        if OS == "linux":
-            try:
-                # get CPU name
-                sh_lscpu = "\n".join(utils.sh_exec("lscpu -J"))
-                cpu_info = json.loads(sh_lscpu)['lscpu']
-
-                data['cpu'] = "information not found"
-
-                for entry in cpu_info:
-                    if entry['field'].lower().startswith("model name"):
-                        data['cpu'] = entry['data']
-                        break
-            except Exception as e:
-                data['cpu'] = f"error {e}"
-
-            data['kernel'] = utils.sh_exec("uname -a")
-
-            # get GPU's
-            data['gpus'] = []
-            for line in utils.sh_exec("lspci"):
-                if "vga" in line.lower():
-                    data['gpus'].append(line)
-
-            #data["pci_devices"] = utils.sh_exec("lspci"),
-            #data['system_root'] = os.listdir("/")
-
-            try:
-                # get essential distro info
-
-                distro_info = {}
-                for key, value in platform.freedesktop_os_release().items():
-                    key = key.lower()
-
-                    if (
-                        key.endswith("name") or
-                        key.endswith("id") or
-                        key.startswith("version") or
-                        key.startswith("variant")
-                    ):
-                        distro_info[key] = value
-                data['distro'] = distro_info
-            except:
-                pass
-            
-            #data['memory_usage'] = utils.sh_exec("free -m")
-            #data['disk_usage'] = utils.sh_exec("df -h")
-        elif OS == "darwin":
-            data['mac_ver'] = platform.mac_ver()
-
-            # TODO: unverified, these commands may not work.. need someone to test it
-
-            #data["memory_usage"] = utils.sh_exec("sysctl hw.memsize")[1].split()[-1]  # In bytes
-            #data['disk_usage'] = utils.sh_exec("df -h")
-        elif OS == "windows":
-            data['win32_ver'] = platform.win32_ver()
-            data['win32_edition'] = platform.win32_edition()
-            data['win32_is_iot'] = platform.win32_is_iot()
-
-            # TODO: unverified, these commands may not work.. need someone to test it
-            #data["memory_usage"] = utils.sh_exec("wmic memorychip get Capacity")  # Total RAM
-            #data['disk_usage'] = utils.sh_exec("wmic logicaldisk get DeviceID, Size, FreeSpace")
-
-        data["_instructions"] = "if you need more information about user's system, use followup tool calls!'"
-
-        return utils.result(data)
-
-    @mcp.tool()
-    def get_memory_usage() -> dict:
-        """returns CPU and GPU memory usage"""
-
-        data = {}
-
-        if OS == "linux":
-            if shutil.which("free"):
-                data['cpu_mem'] = utils.sh_exec("free -m")
-            if shutil.which("nvtop"):
-                data['gpu_mem'] = utils.sh_exec("nvtop -s")
-
-        return utils.result(data)
-
-    @mcp.tool()
-    def get_cpu_info() -> dict:
-        """returns full information about the CPU in user's PC"""
-        if OS == "linux":
-            cpu_info_filtered = {}
-
-            try:
-                sh_lscpu = "\n".join(utils.sh_exec("lscpu -J"))
-                cpu_info = json.loads(sh_lscpu)['lscpu']
-
-                for entry in cpu_info:
-                    key = entry['field']
-                    if key.lower() in ("flags"):
-                        continue
-
-                    cpu_info_filtered[key] = entry['data']
-            except Exception as e:
-                return utils.result(None, f"couldn't fetch cpu info: {e}")
-
-            data = cpu_info_filtered
-        elif OS == "darwin":
-            data = utils.sh_exec("sysctl hw.model")
-        elif OS == "windows":
-            data = utils.sh_exec("wmic cpu get name")
-
-        return utils.result(data)
-
-    @mcp.tool()
-    def get_disk_usage() -> dict:
-        """returns information about disk space usage"""
-
-        if OS in ("linux", "darwin"):
-            return utils.sh_exec_result("df -h")
-        elif OS == "windows":
-            return utils.sh_exec_result("wmic logicaldisk")
-
-    # --- processes ---
-    @mcp.tool()
-    def get_running_system_processes() -> dict:
-        """returns processes that are running as the root user"""
-
-        if OS in ("linux", "darwin"):
-            # TODO: verify this works on macos
-            return utils.sh_exec_result("ps -o pid,comm,%cpu,%mem --sort=-%cpu -U root")
-        elif OS == "windows":
-            return utils.sh_exec_result("tasklist")
-
-    @mcp.tool()
-    def get_running_user_processes() -> dict:
-        """returns processes running under user's account"""
-
-        if OS == "windows":
-            return utils.sh_exec_result("tasklist")
-        else:
-            # TODO: verify this works on macos
-            return utils.sh_exec_result("ps -xo pid,comm,%cpu,%mem --sort=-%cpu")
-
-    @mcp.tool()
-    def get_home_dir_path() -> dict:
-        """get path to user's home directory"""
-
-        return utils.result(os.path.expanduser("~"))
-
-    # --- system control ---
-    @mcp.tool()
-    def kill_process(pid: int = None, process_name: str = None) -> dict:
-        """
-        kill a process by either pid or name.
-        returns a bool representing if it was successful.
-        """
-
-        if OS == "linux":
-            if pid:
-                return utils.sh_exec_result(f"kill -9 {pid}")
-            elif process_name:
-                return utils.sh_exec_result(f"killall -9 {process_name}")
-        elif OS == "windows":
-            return utils.sh_exec_result(f"taskkill /f /im {process_name}")
-        elif OS == "darwin":
-            if pid:
-                return utils.sh_exec_result(f"kill -9 {pid}")
-            elif process_name:
-                return utils.sh_exec_result(f"pkill -f {process_name}")
-
-        return utils.result(False)
-
-    @mcp.tool()
-    def lock_screen() -> dict:
-        """
-        locks the user's pc screen
-        """
-
-        if OS == "linux":
-            return utils.sh_exec_result("loginctl lock-session")
-        elif OS == "windows":
-            return utils.sh_exec_result("rundll32.exe user32.dll,LockWorkStation")
-        elif OS == "darwin":
-            return utils.sh_exec_result("osascript -e 'tell application \"System Events\" to click button \"Lock\" of window \"Login Window\"'")
-
-    # ----------------------
-    # linux specific tools
-    # ----
-    # we don't use the mcp.tool() decorator here
-    # because we check later on if we want to
-    # register these tools with the mcp server
-    # based on if user's OS is linux
-    def get_linux_distro() -> dict:
+    if OS == "linux":
         try:
-            distro_info = platform.freedesktop_os_release()
-            distro = distro_info['ID']
-            related_distros = distro_info['ID_LIKE'].split(" ") if "ID_LIKE" in distro_info.keys() else []
+            # get CPU name
+            sh_lscpu = "\n".join(utils.sh_exec("lscpu -J"))
+            cpu_info = json.loads(sh_lscpu)['lscpu']
 
-            return (distro, related_distros)
+            data['cpu'] = "information not found"
 
+            for entry in cpu_info:
+                if entry['field'].lower().startswith("model name"):
+                    data['cpu'] = entry['data']
+                    break
         except Exception as e:
-            return False
+            data['cpu'] = f"error {e}"
 
-    def shell_cmd(cmd: str) -> dict:
-        """execute a shell command"""
+        data['kernel'] = utils.sh_exec("uname -a")
 
-        # executes within a tightly secured sandbox, but we don't tell the AI that
-        return utils.sh_exec_sandbox(cmd, workdir=os.path.join(utils.get_root_path(), "shell_sandbox"))
+        # get GPU's
+        data['gpus'] = []
+        for line in utils.sh_exec("lspci"):
+            if "vga" in line.lower():
+                data['gpus'].append(line)
 
-    def get_system_diagnostic_info_linux() -> dict:
-        """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
+        #data["pci_devices"] = utils.sh_exec("lspci"),
+        #data['system_root'] = os.listdir("/")
 
-        return utils.result({
-            "mounts": utils.sh_exec("mount"),
-            "usb_devices": utils.sh_exec("lsusb"),
-            "kernel_modules": utils.sh_exec("lsmod"),
-            "usb_devices": utils.sh_exec("lsusb"),
-            "lsirq": utils.sh_exec("lsirq"),
-            "lsipc": utils.sh_exec("lsipc")
-        })
+        try:
+            # get essential distro info
 
-    def get_env_vars() -> dict:
-        """returns user's environment variables"""
+            distro_info = {}
+            for key, value in platform.freedesktop_os_release().items():
+                key = key.lower()
 
-        return utils.result(dict(os.environ))
-    def fetch_man_page(cmd: str) -> dict:
-        """returns a unix manpage for a specified command"""
-
-        if OS not in ("linux", "darwin"):
-            return {"error": "this is not a linux or mac system, man pages are not available"}
-
-        cmd = cmd.split(" ")[0]
-
-        return utils.sh_exec_result(f"man --pager '' {cmd}")
-
-    def get_user_environment_variables() -> dict:
-        """get environment variables for the user's current session"""
-
-        return utils.result(dict(os.environ))
-
-    def list_logged_in_users() -> dict:
-        """get users currently logged in to user's linux system"""
-
-        return utils.sh_exec_result("w")
-
-    # --- package management ---
-    def get_installed_packages() -> dict:
-        """get all installed packages on user's linux system"""
-
-        result = {}
-
-        if shutil.which("pacman"):
-            result['system_packages'] = utils.sh_exec("pacman -Qe")
-        elif shutil.which("apt"):
-            # todo
-            pass
-        elif shutil.which("rpm"):
-            # todo
-            pass
-        else:
+                if (
+                    key.endswith("name") or
+                    key.endswith("id") or
+                    key.startswith("version") or
+                    key.startswith("variant")
+                ):
+                    distro_info[key] = value
+            data['distro'] = distro_info
+        except:
             pass
 
-        if shutil.which("flatpak"):
-            result['flatpak_packages'] = utils.sh_exec("flatpak list")
+        #data['memory_usage'] = utils.sh_exec("free -m")
+        #data['disk_usage'] = utils.sh_exec("df -h")
+    elif OS == "darwin":
+        data['mac_ver'] = platform.mac_ver()
 
-        if shutil.which("snap"):
-            result['snap_packages'] = utils.sh_exec("snap list")
+        # TODO: unverified, these commands may not work.. need someone to test it
 
-        return utils.result(result)
+        #data["memory_usage"] = utils.sh_exec("sysctl hw.memsize")[1].split()[-1]  # In bytes
+        #data['disk_usage'] = utils.sh_exec("df -h")
+    elif OS == "windows":
+        data['win32_ver'] = platform.win32_ver()
+        data['win32_edition'] = platform.win32_edition()
+        data['win32_is_iot'] = platform.win32_is_iot()
 
-    def search_linux_packages(query: str) -> dict:
-        """search for a package in user's linux package manager"""
+        # TODO: unverified, these commands may not work.. need someone to test it
+        #data["memory_usage"] = utils.sh_exec("wmic memorychip get Capacity")  # Total RAM
+        #data['disk_usage'] = utils.sh_exec("wmic logicaldisk get DeviceID, Size, FreeSpace")
 
-        distro, related_distros = get_linux_distro()
-        result = {}
+    data["_instructions"] = "if you need more information about user's system, use followup tool calls!'"
 
-        if shutil.which("pacman"):
-            result['system_packages'] = utils.sh_exec(f"pacman -Ss {query}")
-        else:
-            result['system_packages'] =  f"package manager for linux distribution {distro} unsupported"
+    return utils.result(data)
 
-        if shutil.which("flatpak"):
-            result['flatpak_packages'] = utils.sh_exec(f"flatpak search {query}")
+def get_cpu_info() -> dict:
+    """returns full information about the CPU in user's PC"""
+    if OS == "linux":
+        cpu_info_filtered = {}
 
-        if shutil.which("snap"):
-            result['snap_packages'] = utils.sh_exec(f"snap find {query}")
+        try:
+            sh_lscpu = "\n".join(utils.sh_exec("lscpu -J"))
+            cpu_info = json.loads(sh_lscpu)['lscpu']
 
-        return utils.result(result)
+            for entry in cpu_info:
+                key = entry['field']
+                if key.lower() in ("flags"):
+                    continue
 
-    def flatpak_install_package(name: str) -> dict:
-        """install a flatpak package"""
+                cpu_info_filtered[key] = entry['data']
+        except Exception as e:
+            return utils.result(None, f"couldn't fetch cpu info: {e}")
 
-        # only add this to the mcp tools if flatpak is detected
-        # (this is done further down outside the function definitions)
+        data = cpu_info_filtered
+    elif OS == "darwin":
+        data = utils.sh_exec("sysctl hw.model")
+    elif OS == "windows":
+        data = utils.sh_exec("wmic cpu get name")
 
-        return utils.sh_exec_result(f"flatpak install --noninteractive {name}")
+    return utils.result(data)
 
-    def flatpak_remove_package(name: str) -> dict:
-        """remove a flatpak package"""
+def get_running_processes(show_system_processes: bool = False, limit: int = 10) -> dict:
+    """returns running processes, sorted by RAM usage. use the limit argument to set how many should be returned."""
 
-        return utils.sh_exec_result(f"flatpak uninstall --noninteractive {name}")
+    results = []
+    for pid in psutil.pids():
+        process = psutil.Process(pid)
 
-    # --- systemd services ---
-    def list_user_services() -> dict:
-        """list systemd user services"""
+        target_user = os.getlogin().lower() if not show_system_processes else "root"
 
-        return utils.sh_exec_result("systemctl --user list-unit-files --type service")
+        if process.username().lower() != target_user:
+            continue
 
-    def list_system_services() -> dict:
-        """list systemd system services"""
+        try:
+            p_cpu = round(process.cpu_percent(), 2)
+            p_mem = round(process.memory_percent(), 2)
 
-        return utils.sh_exec_result("systemctl list-unit-files --type service")
+            # get a truncated version of the cmdline
+            p_cmdline = process.cmdline()
+            p_cmdline[0] = os.path.basename(p_cmdline[0])
 
-    def system_service_status(name: str) -> dict:
-        """get the status of a systemd system service"""
+            p_cmdline_short = False
+            if len(p_cmdline) > 5:
+                p_cmdline_short = True
 
-        return utils.result({
-            "status": utils.sh_exec(f"systemctl status {name}"),
-            "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
-        })
+            p_cmd = " ".join(p_cmdline[:5]) + (".." if p_cmdline_short else "")
 
-    def user_service_status(name: str) -> dict:
-        """get the status of a systemd user service"""
+            results.append({
+                "cmd": p_cmd,
+                "pid": pid,
+                "cpu_usage": f"{p_cpu}%",
+                "mem_usage": f"{p_mem}%",
+            })
+        except Exception as e:
+            pass
 
-        return utils.result({
-            "status": utils.sh_exec(f"systemctl --user status {name}"),
-            "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
-        })
+    # sort by memory usage descending
+    results.sort(key=lambda x: float(x["mem_usage"].rstrip('%')), reverse=True)
 
-    def start_user_service(name: str) -> dict:
-        """start a systemd user service"""
+    return utils.result(results[:limit]) # limit amount of results returned
 
-        if OS == "linux":
-            return utils.sh_exec_result(f"systemctl --user -v start {name}")
-        elif OS == "darwin":
-            return utils.sh_exec_result(f"launchctl load -w /Library/LaunchDaemons/{name}.plist")
-        elif OS == "windows":
-            return utils.sh_exec_result(f"sc start {name}")
+def get_memory_usage() -> dict:
+    """returns CPU and GPU memory usage"""
 
-    def restart_user_service(name: str) -> dict:
-        """restart a systemd user service"""
+    data = {}
 
-        return utils.sh_exec_result(f"systemctl --user -v restart {name}")
+    if OS == "linux":
+        if shutil.which("free"):
+            data['cpu_mem'] = utils.sh_exec("free -m")
+        if shutil.which("nvtop"):
+            data['gpu_mem'] = utils.sh_exec("nvtop -s")
 
-    def stop_user_service(name: str) -> dict:
-        """stop a systemd user service"""
+    return utils.result(data)
 
-        return utils.sh_exec_result(f"systemctl --user -v stop {name}")
+def get_disk_usage() -> dict:
+    """returns information about disk space usage"""
 
-    def kill_user_service(name: str) -> dict:
-       """forcefully kill a systemd user service"""
-    
-       return utils.sh_exec_result(f"systemctl --user kill {name}")
+    if OS in ("linux", "darwin"):
+        return utils.sh_exec_result("df -h")
+    elif OS == "windows":
+        return utils.sh_exec_result("wmic logicaldisk")
 
-    def systemd_user_logs() -> dict:
-        """returns systemd user level logs (last 1000 lines)"""
+def get_home_dir_path() -> dict:
+    """get path to user's home directory"""
 
-        return utils.sh_exec_result("journalctl --user -b -n1000")
-    def systemd_kernel_logs() -> dict:
-        """returns systemd kernel logs (journalctl -k)"""
+    return utils.result(os.path.expanduser("~"))
 
-        return utils.sh_exec_result("journalctl -k")
+# --- system control ---
+def kill_process(pid: int = None, process_name: str = None) -> dict:
+    """
+    kill a process by either pid or name.
+    returns a bool representing if it was successful.
+    """
 
-    # --- network control ---
-    def turn_network_off() -> dict:
-        """turns off user's internet"""
-        return utils.sh_exec_result("nmcli network off")
-    def turn_network_on() -> dict:
-        """turns on user's internet"""
-        return utils.sh_exec_result("nmcli network on")
+    if OS == "linux":
+        if pid:
+            return utils.sh_exec_result(f"kill -9 {pid}")
+        elif process_name:
+            return utils.sh_exec_result(f"killall -9 {process_name}")
+    elif OS == "windows":
+        return utils.sh_exec_result(f"taskkill /f /im {process_name}")
+    elif OS == "darwin":
+        if pid:
+            return utils.sh_exec_result(f"kill -9 {pid}")
+        elif process_name:
+            return utils.sh_exec_result(f"pkill -f {process_name}")
 
-    # --- media control ---
-    def media_currently_playing() -> dict:
-        """fetch what media is currently playing on user's device"""
+    return utils.result(False)
 
-        return utils.sh_exec_result("playerctl metadata")
+def lock_screen() -> dict:
+    """
+    locks the user's pc screen
+    """
 
-    def media_toggle_pause() -> dict:
-        """toggle media play/pause"""
+    if OS == "linux":
+        return utils.sh_exec_result("loginctl lock-session")
+    elif OS == "windows":
+        return utils.sh_exec_result("rundll32.exe user32.dll,LockWorkStation")
+    elif OS == "darwin":
+        return utils.sh_exec_result("osascript -e 'tell application \"System Events\" to click button \"Lock\" of window \"Login Window\"'")
 
-        return utils.sh_exec_result("playerctl play-pause")
+# ----------------------
+# linux specific tools
+# ----
+# we don't use the mcp.tool() decorator here
+# because we check later on if we want to
+# register these tools with the mcp server
+# based on if user's OS is linux
+def get_linux_distro() -> dict:
+    try:
+        distro_info = platform.freedesktop_os_release()
+        distro = distro_info['ID']
+        related_distros = distro_info['ID_LIKE'].split(" ") if "ID_LIKE" in distro_info.keys() else []
 
-    def media_next() -> dict:
-        """skip to next media"""
+        return (distro, related_distros)
 
-        return utils.sh_exec_result("playerctl next")
+    except Exception as e:
+        return False
 
-    def media_previous() -> dict:
-        """go back to previous media"""
+def shell_cmd(cmd: str) -> dict:
+    """execute a shell command"""
 
-        return utils.sh_exec_result("playerctl previous")
+    # executes within a tightly secured sandbox, but we don't tell the AI that
+    return utils.sh_exec_sandbox(cmd, workdir=os.path.join(utils.get_root_path(), "shell_sandbox"))
 
-    def media_toggle_shuffle() -> dict:
-        """toggle media player shuffle"""
+def get_system_diagnostic_info_linux() -> dict:
+    """returns extra diagnostic info such as: attached usb devices, mount points, kernel modules, lsirq, lsipc"""
 
-        return utils.sh_exec_result("playerctl shuffle Toggle")
+    return utils.result({
+        "mounts": utils.sh_exec("mount"),
+        "usb_devices": utils.sh_exec("lsusb"),
+        "kernel_modules": utils.sh_exec("lsmod"),
+        "usb_devices": utils.sh_exec("lsusb"),
+        "lsirq": utils.sh_exec("lsirq"),
+        "lsipc": utils.sh_exec("lsipc")
+    })
 
-    def media_stop() -> dict:
-        """stop playing media"""
-        return utils.sh_exec_result("playerctl stop")
+def get_env_vars() -> dict:
+    """returns user's environment variables"""
+
+    return utils.result(dict(os.environ))
+def fetch_man_page(cmd: str) -> dict:
+    """returns a unix manpage for a specified command"""
+
+    if OS not in ("linux", "darwin"):
+        return {"error": "this is not a linux or mac system, man pages are not available"}
+
+    cmd = cmd.split(" ")[0]
+
+    return utils.sh_exec_result(f"man --pager '' {cmd}")
+
+def get_user_environment_variables() -> dict:
+    """get environment variables for the user's current session"""
+
+    return utils.result(dict(os.environ))
+
+def list_logged_in_users() -> dict:
+    """get users currently logged in to user's linux system"""
+
+    return utils.sh_exec_result("w")
+
+# --- package management ---
+def get_installed_packages() -> dict:
+    """get all installed packages on user's linux system"""
+
+    result = {}
+
+    if shutil.which("pacman"):
+        result['system_packages'] = utils.sh_exec("pacman -Qe")
+    elif shutil.which("apt"):
+        # todo
+        pass
+    elif shutil.which("rpm"):
+        # todo
+        pass
+    else:
+        pass
+
+    if shutil.which("flatpak"):
+        result['flatpak_packages'] = utils.sh_exec("flatpak list")
+
+    if shutil.which("snap"):
+        result['snap_packages'] = utils.sh_exec("snap list")
+
+    return utils.result(result)
+
+def search_linux_packages(query: str) -> dict:
+    """search for a package in user's linux package manager"""
+
+    distro, related_distros = get_linux_distro()
+    result = {}
+
+    if shutil.which("pacman"):
+        result['system_packages'] = utils.sh_exec(f"pacman -Ss {query}")
+    else:
+        result['system_packages'] =  f"package manager for linux distribution {distro} unsupported"
+
+    if shutil.which("flatpak"):
+        result['flatpak_packages'] = utils.sh_exec(f"flatpak search {query}")
+
+    if shutil.which("snap"):
+        result['snap_packages'] = utils.sh_exec(f"snap find {query}")
+
+    return utils.result(result)
+
+def flatpak_install_package(name: str) -> dict:
+    """install a flatpak package"""
+
+    # only add this to the mcp tools if flatpak is detected
+    # (this is done further down outside the function definitions)
+
+    return utils.sh_exec_result(f"flatpak install --noninteractive {name}")
+
+def flatpak_remove_package(name: str) -> dict:
+    """remove a flatpak package"""
+
+    return utils.sh_exec_result(f"flatpak uninstall --noninteractive {name}")
+
+# --- systemd services ---
+def list_user_services() -> dict:
+    """list systemd user services"""
+
+    return utils.sh_exec_result("systemctl --user list-unit-files --type service")
+
+def list_system_services() -> dict:
+    """list systemd system services"""
+
+    return utils.sh_exec_result("systemctl list-unit-files --type service")
+
+def system_service_status(name: str) -> dict:
+    """get the status of a systemd system service"""
+
+    return utils.result({
+        "status": utils.sh_exec(f"systemctl status {name}"),
+        "journal": utils.sh_exec(f"journalctl -I -n 50 -u {name}")
+    })
+
+def user_service_status(name: str) -> dict:
+    """get the status of a systemd user service"""
+
+    return utils.result({
+        "status": utils.sh_exec(f"systemctl --user status {name}"),
+        "journal": utils.sh_exec(f"journalctl --user -I -n 50 -u {name}")
+    })
+
+def start_user_service(name: str) -> dict:
+    """start a systemd user service"""
+
+    if OS == "linux":
+        return utils.sh_exec_result(f"systemctl --user -v start {name}")
+    elif OS == "darwin":
+        return utils.sh_exec_result(f"launchctl load -w /Library/LaunchDaemons/{name}.plist")
+    elif OS == "windows":
+        return utils.sh_exec_result(f"sc start {name}")
+
+def restart_user_service(name: str) -> dict:
+    """restart a systemd user service"""
+
+    return utils.sh_exec_result(f"systemctl --user -v restart {name}")
+
+def stop_user_service(name: str) -> dict:
+    """stop a systemd user service"""
+
+    return utils.sh_exec_result(f"systemctl --user -v stop {name}")
+
+def kill_user_service(name: str) -> dict:
+    """forcefully kill a systemd user service"""
+
+    return utils.sh_exec_result(f"systemctl --user kill {name}")
+
+def systemd_user_logs() -> dict:
+    """returns systemd user level logs (last 1000 lines)"""
+
+    return utils.sh_exec_result("journalctl --user -b -n1000")
+def systemd_kernel_logs() -> dict:
+    """returns systemd kernel logs (journalctl -k)"""
+
+    return utils.sh_exec_result("journalctl -k")
+
+# --- network control ---
+def turn_network_off() -> dict:
+    """turns off user's internet"""
+    return utils.sh_exec_result("nmcli network off")
+def turn_network_on() -> dict:
+    """turns on user's internet"""
+    return utils.sh_exec_result("nmcli network on")
+
+# --- media control ---
+def media_currently_playing() -> dict:
+    """fetch what media is currently playing on user's device"""
+
+    return utils.sh_exec_result("playerctl metadata")
+
+def media_toggle_pause() -> dict:
+    """toggle media play/pause"""
+
+    return utils.sh_exec_result("playerctl play-pause")
+
+def media_next() -> dict:
+    """skip to next media"""
+
+    return utils.sh_exec_result("playerctl next")
+
+def media_previous() -> dict:
+    """go back to previous media"""
+
+    return utils.sh_exec_result("playerctl previous")
+
+def media_toggle_shuffle() -> dict:
+    """toggle media player shuffle"""
+
+    return utils.sh_exec_result("playerctl shuffle Toggle")
+
+def media_stop() -> dict:
+    """stop playing media"""
+    return utils.sh_exec_result("playerctl stop")
+
+def register_mcp(mcp):
+    mcp.tool(get_datetime)
+    mcp.tool(get_home_dir_path)
+    mcp.tool(get_system_info)
+    mcp.tool(get_running_processes)
+    mcp.tool(get_memory_usage)
+    mcp.tool(get_cpu_info)
+
+    mcp.tool(kill_process)
+    mcp.tool(lock_screen)
 
     if OS == "linux":
         # register all the linux-specific tools into the mcp server
