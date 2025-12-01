@@ -103,7 +103,7 @@ async def process_webpage(html):
                 del output["urls"]
 
                 output["message"] = (
-                    "nothing could be scraped from the page! use a web search tool call to find more information about this website."
+                    "nothing could be scraped from the page!"
                 )
 
     return output
