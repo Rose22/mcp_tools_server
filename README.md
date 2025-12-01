@@ -8,6 +8,7 @@ it's cross platform and what tools your LLM will see depends on what operating s
 
 it enables your chosen AI assistant to:
 
+- search the web using duckduckgo (no API key needed, we use page scraping)
 - browse, read and modify your files (with safety features such as automatic backups before modification)
 - read and process a wide range of file types (it can do things like look inside zip archives, see video metadata, stuff like that)
 - read and process remote URLs (links) of those same file types and with the same extraction abilities
