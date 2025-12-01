@@ -4,13 +4,13 @@ import urllib
 
 from mcp_tools import reader
 
-async def search_web(query: str, purpose: str, memory: str, limit: int = 6):
+async def search_web(query: str, purpose: str, memory: str, limit: int = 4):
     """
     search the web for a query. uses read_multiple_files_or_urls internally to process the resulting pages.
 
     use the "purpose" argument to describe the purpose of this request.
     use the "memory" argument for details that must be remembered by the LLM after parsing all the data, such as details about the user.
-    use the "limit" argument to specify how many results to fetch. defaults to 6.
+    use the "limit" argument to specify how many results to fetch. defaults to 4.
     """
 
     url = f"https://duckduckgo.com/html/?q={query.replace(' ', '+')}"
