@@ -1,0 +1,7 @@
+[project]
+name = "mcp-tools-server"
+version = "0.1.0"
+description = "a very flexible and capable cross-platform MCP server intended to be run on your own device. it's inspired by classic AI assistants like Apple Siri, Amazon Alexa and Google Assistant, except with the power of an LLM!"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["fastmcp", "psutil", "aiohttp"]
