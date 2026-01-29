@@ -27,7 +27,7 @@ def register_mcp(mcp):
             return False
 
     @mcp.tool
-    def get_memories(minimum_days_in_the_past: int = 0, maximum_days_in_the_past: int = 30):
+    def get_memories(max_days_ago: int = 30):
         """
         Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
@@ -35,8 +35,7 @@ def register_mcp(mcp):
         1. You MUST call this before ANY memory-related operations (edit, delete, search)
         2. Only memories returned by this call are "currently visible" and available for editing/deleting
         3. Call this at conversation start to see what you should remember
-        4. Use maximum_days_in_the_past to specify how far back to recall (defaults to 30 = recall as far back as 30 days ago)
-        5. Use minimum_days_in_the_past to specify up to when to recall (defaults to 0 = recall up to today)
+        4. Use max_days_ago to filter by recency
 
         Information stored includes:
         - Past events and conversations
@@ -46,14 +45,13 @@ def register_mcp(mcp):
         """
         mem = load_mem()
         mem_filtered = []
-        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=maximum_days_in_the_past)
-        max_date = datetime.datetime.now() - datetime.timedelta(days=minimum_days_in_the_past)
+        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=max_days_ago)
         
         for memory in mem:
             try:
                 # recall by last modified date, or if absent, by original date
                 memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
-                if memory_date >= cutoff_date and memory_date <= max_date:
+                if memory_date >= cutoff_date:
                     mem_filtered.append(memory)
             except ValueError:
                 # If date parsing fails, include memory anyway
