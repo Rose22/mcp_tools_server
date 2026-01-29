@@ -9,12 +9,13 @@ network_port:
 
 # toggle your enabled modules here
 enabled_modules:
-  - system
-  - files
-  - networking
+  - memory
   - database
   - reader
-  - websearch
+  # - system
+  # - files
+  # - networking
+  # - websearch
   # careful with enabling direct shell command execution!
   # - shell
 
@@ -23,16 +24,14 @@ enabled_modules:
 data_types:
   note:
     plural: notes
-  task:
-    plural: tasks
   list:
     plural: lists
-    instructions: always format it as a bullet list, optionally split into categories using markdown headers
+    generation_instructions: always format it as a bullet list, optionally split into categories using markdown headers
   bookmark:
     plural: bookmarks
   prompt:
     plural: prompts
   recipe:
     plural: recipes
-    instructions: format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions
+    generation_instructions: format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions
 

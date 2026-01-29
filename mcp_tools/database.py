@@ -216,7 +216,7 @@ def register_mcp(mcp):
     # ------
     # now for the secret sauce!
     # -----------
-    def add_data_type(mcp, type_name_singular, type_name_plural, additional_instructions=""):
+    def add_data_type(mcp, type_name_singular, type_name_plural, retrieval_instructions="", generation_instructions=""):
         """
         this dynamically creates MCP tools based on a given data type.
         it does this by defining a wrapper function and passing it
@@ -251,7 +251,7 @@ def register_mcp(mcp):
             description=f"""
 creates a {type_name_singular} and adds it to the {type_name_singular} storage.
 please use markdown format!
-{additional_instructions}
+{generation_instructions}
         """,
             exclude_args=["_type"]
         )
@@ -272,7 +272,7 @@ please use markdown format!
         mcp.tool(
             _edit_data_entry,
             name=f"db_edit_{type_name_singular}",
-            description=f"edits an existing {type_name_singular}. please use markdown format! {additional_instructions}",
+            description=f"edits an existing {type_name_singular}. please use markdown format! {generation_instructions}",
             exclude_args=["_type"]
         )
 
@@ -292,7 +292,7 @@ please use markdown format!
         mcp.tool(
             _search_in_data,
             name=f"db_search_{type_name_plural}",
-            description=f"searches within the name and contents of all stored {type_name_plural} for your given query",
+            description=f"searches within the name and contents of all stored {type_name_plural} for your given query. {retrieval_instructions}",
             exclude_args=["_type"]
         )
 
@@ -327,4 +327,4 @@ please use markdown format!
 
     # load data types
     for data_type_name, data_type in config.get("data_types").items():
-        add_data_type(mcp, data_type_name, data_type.get("plural", data_type_name), additional_instructions=data_type.get("instructions", None))
+        add_data_type(mcp, data_type_name, data_type.get("plural", data_type_name), retrieval_instructions=data_type.get("retrieval_instructions", None), generation_instructions=data_type.get("generation_instructions", None))
