@@ -60,7 +60,7 @@ def register_mcp(mcp):
             end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d")
         
         if start_date is None:
-            start_date_obj = end_date_obj - timedelta(days=30)
+            start_date_obj = end_date_obj - datetime.timedelta(days=30)
         else:
             start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d")
         
