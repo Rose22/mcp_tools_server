@@ -42,6 +42,10 @@ def register_mcp(mcp):
         - Important facts about the user
         - Your own configuration/state information
 
+        RETRIEVAL LOGIC:
+        1. ALL persistent memories are ALWAYS included (regardless of date)
+        2. Non-persistent memories are filtered by date range
+
         Args:
             start_date (str, optional): Start date in "YYYY-MM-DD" format.
                 If None, defaults to 30 days ago.
@@ -68,6 +72,12 @@ def register_mcp(mcp):
         mem_filtered = []
         
         for memory in mem:
+            if memory.get("persistent", False):
+                # always include persistent memories
+                mem_filtered.append(memory)
+                continue
+
+            # filter non-persistent memories by date
             memory_date = datetime.datetime.strptime(
                 memory.get("date"), "%c"
             )
@@ -77,30 +87,57 @@ def register_mcp(mcp):
         return utils.result(mem_filtered)
 
     @mcp.tool
-    def store_memory(content: str):
+    def store_memory(content: str, persistent: bool = False):
         """
         Stores a memory for future use. You MUST use this to retain information across conversations.
 
-        STORAGE RULES:
+        CRITICAL STORAGE RULES:
         1. ALWAYS use when user provides new personal information
         2. ALWAYS use for important conversation outcomes
         3. ALWAYS use for user preferences/changes
         4. ALWAYS summarize in 1-2 concise paragraphs
         5. ALWAYS refer to user as "user", never "you" or "i"
-        
-        IMPORTANT: Use edit_memory instead if modifying existing visible memories. 
+
+        IMPORTANT: Use edit_memory instead if modifying existing visible memories.
         A memory is "visible" ONLY if returned by get_memories() in current context.
+
+        PERSISTENT MEMORIES:
+        • persistent=False (default): Memory is date-based and will only appear in get_memories()
+          when its date falls within the requested date range.
+        • persistent=True: Memory is ALWAYS included in get_memories() results, regardless of date range.
+          Use this for evergreen information that should never be forgotten.
+
+        When to use persistent=True:
+        • User's core identity details (name, occupation, family)
+        • Permanent preferences (allergies, dietary restrictions)
+        • Long-term goals or life circumstances
+        • System configuration that never changes
+
+        When to use persistent=False:
+        • Recent events or conversations
+        • Temporary preferences or moods
+        • Time-sensitive information
+        • Context that might become outdated
+
+        Examples:
+        - store_memory("User's name is Rose and she has blue eyes", persistent=True)
+        - store_memory("User mentioned feeling tired today and wants to reschedule", persistent=False)
         """
         mem = load_mem()
 
         # Generate new ID
         highest_id = max([m.get("id", 0) for m in mem], default=0) + 1
 
-        mem.append({
+        new_mem = {
             "id": highest_id,
             "date": datetime.datetime.now().strftime("%c"),
             "content": content
-        })
+        }
+
+        if persistent:
+            new_mem["persistent"] = True
+
+        mem.append(new_mem)
 
         success = write_mem(mem)
         return utils.result({"id": highest_id, "success": success})
