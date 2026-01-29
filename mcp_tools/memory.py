@@ -72,8 +72,8 @@ def register_mcp(mcp):
         return utils.result(write_mem(mem))
 
     @mcp.tool
-    def edit_memory(id: int, content: str):
-        """Edits the content of an existing memory. You need to have the memory's ID first! If memories were retrieved earlier in the conversation, and the information provided is related to one of those memories, prefer editing a relevant memory over creating new memories."""
+    def update_memory(id: int, content: str):
+        """updates the content of an existing memory. You need to have the memory's ID first! If memories were retrieved earlier in the conversation, and the information provided is related to one of those memories, prefer editing a relevant memory over creating new memories."""
         mem = load_mem()
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
