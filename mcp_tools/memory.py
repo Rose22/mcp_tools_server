@@ -92,7 +92,14 @@ def register_mcp(mcp):
         mem = load_mem()
         found_memories = []
         for memory in mem:
-            if query.lower() in (memory.get("content").lower(), memory.get("date").lower()):
+            found_memory = False
+            for word in memory.get("content"):
+                if word in query:
+                    found_memories.append(memory)
+            if found_memory:
+                continue
+
+            if query.lower() in memory.get("date").lower():
                 found_memories.append(memory)
 
         return utils.result(found_memories)
