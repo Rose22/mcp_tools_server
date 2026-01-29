@@ -84,7 +84,7 @@ def register_mcp(mcp):
         """
         Edits the content of an existing memory. ONLY use if results of get_memories() tool call are visible within the corrent context. Use if user has provided new information related to an existing memory, or requested a change to something stored in a memory.
         
-        NEVER edit a memory without having it's ID.
+        NEVER edit a memory without having it's ID. Reject if you can't find the memory the edit was requested for.
 
         How to use:
         1. Find the memory that the edit was requested for, within the current context. Can't find it? Then don't call this tool!
@@ -104,7 +104,7 @@ def register_mcp(mcp):
         """
         Deletes a memory by its id. ONLY use if results of get_memories() tool call are visible within the current context. Use with caution!
 
-        NEVER delete a memory without having it's ID.
+        NEVER delete a memory without having it's ID. Reject if you can't find the memory the deletion was requested for.
 
         How to use:
         1. Find the memory that the deletion was requested for, within the current context. Can't find it? Then don't call this tool!
