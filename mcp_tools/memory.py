@@ -1,12 +1,90 @@
 import utils
+import os
+import json
+import datetime
+
+memory_path = f"{utils.get_root_path()}/memory.json"
 
 def register_mcp(mcp):
+    def load_mem():
+        if not os.path.exists(memory_path):
+            with open(memory_path, "w") as f:
+                f.write(json.dumps([]))
+
+        try:
+            with open(memory_path, "r") as f:
+                data = json.load(f)
+            return data
+        except:
+            return []
+
+    def write_mem(mem):
+        try:
+            with open(memory_path, "w") as f:
+                f.write(json.dumps(mem))
+            return True
+        except:
+            return False
+
     @mcp.tool
-    def get_memories():
-        """retrieves your memories. ALWAYS call this at the start of a conversation!"""
-        return utils.result(True)
+    def get_memories(max_days_ago: int = 30):
+        """
+        Retrieves memories from your persistent memory storage. You ALWAYS need to use this tool when recalling something from the past. Do not rely on the current context window. Use even when user hasn't specified exactly what to recall. Assume information you don't have access to in the current context can be found within the memories.
+
+        Information commonly stored within memories includes:
+        - events from the past
+        - personal preferences
+        - information about user
+        - information about you
+
+        use max_days_ago to specify how many days into the past you want to remember.
+        """
+        mem = load_mem()
+        mem_filtered = []
+        for memory in mem:
+            date_raw = datetime.datetime.strptime(memory.get("date"), "%c")
+            date_past = date_raw - datetime.timedelta(days=max_days_ago)
+
+            if date_raw >= date_past:
+                mem_filtered.append(memory)
+
+        return utils.result(mem_filtered)
 
     @mcp.tool
     def store_memory(title: str, description: str):
-        """stores a memory. ALWAYS call this when you need to remember something later!"""
-        return utils.result(True)
+        """Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation. Summarize the memory before storing it, keep it to one paragraph."""
+        mem = load_mem()
+
+        mem.append({
+            "date": datetime.datetime.now().strftime("%c"),
+            "title": title,
+            "description": description
+        })
+
+        return utils.result(write_mem(mem))
+
+    @mcp.tool
+    def delete_memory(title: str) -> dict:
+        """Deletes a memory by title. Use with caution!"""
+        mem = load_mem()
+        found_memory = False
+        for index, memory in enumerate(mem):
+            if memory.get("title").strip().lower() == title.lower().strip():
+                del(mem[index])
+                found_memory = True
+
+        if not found_memory:
+            return utils.result(None, "could not find memory with that title. get all memories first, so you can get the memory's title!")
+
+        return utils.result(write_mem(mem))
+
+    @mcp.tool
+    def search_within_memories(query: str) -> dict:
+        """Searches your persistent memory storage for a specific term. Use ONLY if user specifies the exact thing to recall. Will search across date, title and description."""
+        mem = load_mem()
+        found_memories = []
+        for memory in mem:
+            if query.lower() in (memory.get("title").lower(), memory.get("description").lower(), memory.get("date").lower()):
+                found_memories.append(memory)
+
+        return utils.result(found_memories)

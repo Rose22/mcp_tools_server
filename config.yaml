@@ -9,12 +9,12 @@ network_port:
 
 # toggle your enabled modules here
 enabled_modules:
-  # - system
   - memory
-  - files
-  - networking
   - database
   - reader
+  # - system
+  # - files
+  # - networking
   # - websearch
   # careful with enabling direct shell command execution!
   # - shell
