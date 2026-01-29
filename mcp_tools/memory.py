@@ -77,6 +77,9 @@ def register_mcp(mcp):
         mem = load_mem()
         found_memory = False
         for index, memory in enumerate(mem):
+            if found_memory:
+                continue
+
             if memory.get("id") == id:
                 del(mem[index])
                 found_memory = True
