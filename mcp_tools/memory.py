@@ -64,8 +64,15 @@ def register_mcp(mcp):
         """
         mem = load_mem()
 
+        # get highest id
+        highest_id = 0
+        for memory in mem:
+            if memory.get(id) >= highest_id:
+                highest_id = memory.get(id)
+        highest_id += 1
+
         mem.append({
-            "id": len(mem)+1,
+            "id": highest_id,
             "date": datetime.datetime.now().strftime("%c"),
             "content": content
         })
