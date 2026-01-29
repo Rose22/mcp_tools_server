@@ -29,15 +29,16 @@ def register_mcp(mcp):
     @mcp.tool
     def get_memories(max_days_ago: int = 30):
         """
-        Retrieves memories from your persistent memory storage. You ALWAYS need to use this tool when recalling something from the past. Do not rely on the current context window. Use even when user hasn't specified exactly what to recall. Assume information you don't have access to in the current context can be found within the memories.
+        Retrieves memories from persistent storage. Call this proactively whenever you need context about:
+        - Past conversations and events
+        - User preferences and habits
+        - Personal information about the user
+        - Previous interactions or agreements
 
-        Information commonly stored within memories includes:
-        - events from the past
-        - personal preferences
-        - information about user
-        - information about you
+        **Important:** Do not assume information exists in your context window. Always retrieve memories when discussing anything from the past.
 
-        use max_days_ago to specify how many days into the past you want to remember.
+        Args:
+            max_days_ago: Number of days to look back (default: 30 days)
         """
 
         mem = load_mem()
@@ -54,13 +55,20 @@ def register_mcp(mcp):
     @mcp.tool
     def store_memory(content: str):
         """
-        Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation.
+        Saves important information to persistent memory for future conversations. **Always use this when:**
+        - User shares personal information (preferences, background, goals)
+        - Important facts about the user are established
+        - Agreements, decisions, or preferences are made
+        - Context that would be useful in future conversations
 
-        RULES:
-        - Use edit_memory instead if user is requesting a change to an existing memory. But ONLY if that memory's ID is visible within the toolcall results of get_memories() within the current context!
-        - Always refer to user as "user", never "you" or "i".
-        - Summarize the memory before storing it. Keep it to one paragraph.
-        - Prefer storing information given by user into memory whenever possible, including when user provides any new information about themselves.
+        **Guidelines:**
+        - Write from neutral third-person perspective (refer to "user", not "you" or "I")
+        - Keep summaries concise—one paragraph maximum
+        - Focus on factual, actionable information
+        - Include context that makes the memory standalone (don't assume future context)
+
+        Args:
+            content: A clear, summary statement of what to remember
         """
         mem = load_mem()
 
@@ -82,14 +90,23 @@ def register_mcp(mcp):
     @mcp.tool
     def edit_memory(id: int, content: str):
         """
-        Edits the content of an existing memory. ONLY use if results of get_memories() tool call are visible within the corrent context. Use if user has provided new information related to an existing memory, or requested a change to something stored in a memory.
-        
-        NEVER edit a memory without having it's ID. Reject if you can't find the memory the edit was requested for.
+        Updates an existing memory with new information. **Prerequisites:**
+        - You must have retrieved the memory using `get_memories()` in the current conversation
+        - The memory's ID must be visible in the current context
+        - User is providing an update or correction to an existing memory
 
-        How to use:
-        1. Find the memory that the edit was requested for, within the current context. Can't find it? Then don't call this tool!
-        2. If you found the memory, look for it's ID.
-        3. Finally, use the ID you found in the edit_memory call.
+        **When to use:**
+        - User clarifies or adds to existing stored information
+        - Information previously stored needs updating
+        - Correcting inaccurate or outdated memories
+
+        **When NOT to use:**
+        - If you cannot see the memory ID in the current context
+        - If creating a new memory (use `store_memory` instead)
+
+        Args:
+            id: The memory ID (must be from `get_memories()` results)
+            content: Updated content
         """
         mem = load_mem()
         for index, memory in enumerate(mem):
@@ -102,14 +119,19 @@ def register_mcp(mcp):
     @mcp.tool
     def delete_memory(id: int) -> dict:
         """
-        Deletes a memory by its id. ONLY use if results of get_memories() tool call are visible within the current context. Use with caution!
+        Removes a memory from storage. **Use with caution!**
 
-        NEVER delete a memory without having it's ID. Reject if you can't find the memory the deletion was requested for.
+        **Prerequisites:**
+        - The memory must be visible in current context (from `get_memories()` call)
+        - User has explicitly requested deletion
+        - You have confirmed the correct memory ID
 
-        How to use:
-        1. Find the memory that the deletion was requested for, within the current context. Can't find it? Then don't call this tool!
-        2. If you found the memory, look for it's ID. 
-        3. Finally, use the ID you found in the delete_memory call.
+        **Never delete without:**
+        - Seeing the memory ID in current context
+        - User's explicit confirmation (when appropriate)
+
+        Args:
+            id: The memory ID to delete
         """
         mem = load_mem()
         found_memory = False
