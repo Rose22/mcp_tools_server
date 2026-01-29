@@ -59,7 +59,7 @@ def register_mcp(mcp):
         RULES:
         - Always refer to user as "user", never "you" or "i".
         - Summarize the memory before storing it. Keep it to one paragraph.
-        - Prefer storing information given by user into memory whenever possible.
+        - Prefer storing information given by user into memory whenever possible, including when user provides any new information about themselves.
         """
         mem = load_mem()
 
