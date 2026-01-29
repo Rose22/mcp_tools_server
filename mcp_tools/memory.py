@@ -81,7 +81,14 @@ def register_mcp(mcp):
 
     @mcp.tool
     def edit_memory(id: int, content: str):
-        """Edits the content of an existing memory. You need to have the memory's ID first! Use if user has provided new information related to an existing memory, or requested a change to something stored in a memory."""
+        """
+        Edits the content of an existing memory. ONLY use if results of get_memories() are visible within the corrent context. Use if user has provided new information related to an existing memory, or requested a change to something stored in a memory.
+
+        How to use:
+        1. Find the memory that the edit was requested for, within the current context. Can't find it? Then don't call this tool!
+        2. If you found the memory, look for it's ID.
+        3. Finally, use the ID you found in the edit_memory call.
+        """
         mem = load_mem()
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
@@ -92,7 +99,14 @@ def register_mcp(mcp):
 
     @mcp.tool
     def delete_memory(id: int) -> dict:
-        """Deletes a memory by id. To get the id, you first need to retrieve the memory using get_memories(). Make sure to ALWAYS use the ID linked to the memory you're trying to delete. Use with caution!"""
+        """
+        Deletes a memory by its id. ONLY use if results of get_memories() are visible within the current context. Use with caution!
+
+        How to use:
+        1. Find the memory that the deletion was requested for, within the current context. Can't find it? Then don't call this tool!
+        2. If you found the memory, look for it's ID. 
+        3. Finally, use the ID you found in the delete_memory call.
+        """
         mem = load_mem()
         found_memory = False
         for index, memory in enumerate(mem):
