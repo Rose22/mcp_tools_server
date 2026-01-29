@@ -1,20 +1,38 @@
+# set your transport type here (one of: stdio, sse, streamable-http, http)
+transport_type: stdio
+
+# if using a transport other than stdio:
+# host address
+network_host: 
+# port number
+network_port:
+
 # toggle your enabled modules here
 enabled_modules:
   - system
   - files
   - networking
   - database
+  - reader
   - websearch
   # careful with enabling direct shell command execution!
   # - shell
 
-# set your transport type here (one of: stdio, sse, streamable-http, http)
-transport_type: stdio
-
-# -- if using a transport other than stdio:
-# host address
-network_host: 
-
-# port number
-network_port:
+# database data types (notes, tasks, and so on)
+# a data type has a plural name (for display purposes), and optionally instructions that the LLM will follow when creating or editing a new item of that type
+data_types:
+  note:
+    plural: notes
+  task:
+    plural: tasks
+  list:
+    plural: lists
+    instructions: always format it as a bullet list, optionally split into categories using markdown headers
+  bookmark:
+    plural: bookmarks
+  prompt:
+    plural: prompts
+  recipe:
+    plural: recipes
+    instructions: format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions
 

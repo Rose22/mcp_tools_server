@@ -4,6 +4,7 @@ import utils
 import datetime
 
 DATA_PATH = utils.get_data_path()
+config = utils.load_config()
 
 def filter_data_path(type_name_plural: str, category: str, name: str):
     name = utils.strip_filename(name).replace(".md", "")
@@ -327,14 +328,8 @@ please use markdown format!
     # ------------
     # add data types here!
     # ----------------------
-    add_data_type(mcp, "notes", "note")
-    #add_data_type(mcp, "tasks", "task")
-    #add_data_type(mcp, "ideas", "idea")
-    add_data_type(mcp, "lists", "list", additional_instructions="always format it as a bullet list, optionally split into categories using markdown headers")
-    #add_data_type(mcp, "goals", "goal", additional_instructions="use only for longterm goals")
-    #add_data_type(mcp, "events", "event", additional_instructions="always add a date and time, and include it in the name of the note")
-    #add_data_type(mcp, "contacts", "contact")
-    #add_data_type(mcp, "conversation_logs", "conversation_log")
-    add_data_type(mcp, "bookmarks", "bookmark", additional_instructions="always include the original URL and a description of the bookmark")
-    add_data_type(mcp, "prompts", "prompt")
-    add_data_type(mcp, "recipes", "recipe", additional_instructions="format it like a traditional recipe, with a list of ingredients at the top, a handy shopping list, and step by step instructions")
+    for data_type in config.get("data_types"):
+        if "name" not in data_type or "name_plural" not in data_type:
+            continue
+
+        add_data_type(mcp, data_type.get("name"), data_type.get("name_plural"), additional_instructions=data_type.get("instructions", None))
