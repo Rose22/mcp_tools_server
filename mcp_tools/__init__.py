@@ -1,7 +1,5 @@
 import utils
 import importlib
-# this is how it used to work
-# from mcp_tools import system, files, reader, networking, markdown_db, websearch
 
 config = utils.load_config()
 
@@ -9,6 +7,8 @@ def register_mcp(mcp):
     """
     register the mcp tools from throughout the project into the MCP server
     """
+
+    # dynamically load modules based on which ones are enabled
     for module in config.get("enabled_modules"):
         try:
             print(f"loading module {module}..")
