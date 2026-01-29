@@ -57,7 +57,7 @@ def register_mcp(mcp):
         Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation.
 
         RULES:
-        - Use edit_memory instead if user is requesting a change to an existing memory.
+        - Use edit_memory instead if user is requesting a change to an existing memory. But ONLY if that memory's ID is visible within the toolcall results of get_memories() within the current context!
         - Always refer to user as "user", never "you" or "i".
         - Summarize the memory before storing it. Keep it to one paragraph.
         - Prefer storing information given by user into memory whenever possible, including when user provides any new information about themselves.
