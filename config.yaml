@@ -10,6 +10,7 @@ network_port:
 # toggle your enabled modules here
 enabled_modules:
   # - system
+  - memory
   - files
   - networking
   - database
@@ -21,10 +22,6 @@ enabled_modules:
 # database data types (notes, tasks, and so on)
 # a data type has a plural name (for display purposes), and optionally instructions that the LLM will follow when creating or editing a new item of that type
 data_types:
-  memory:
-    plural: memories
-    retrieval_instructions: ALWAYS search your stored memories when trying to recall something from the past.
-    generation_instructions: summarize the memory, keep it within one paragraph.
   note:
     plural: notes
   list:
