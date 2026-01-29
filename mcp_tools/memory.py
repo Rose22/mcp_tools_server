@@ -67,7 +67,12 @@ def register_mcp(mcp):
         # get highest id
         highest_id = 0
         for memory in mem:
-            if memory.get("id", 0) >= highest_id:
+            id = memory.get("id")
+            if not id:
+                # wtf??
+                continue
+
+            if memory.get("id") >= highest_id:
                 highest_id = memory.get(id)
         highest_id += 1
 
