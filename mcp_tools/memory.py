@@ -49,11 +49,10 @@ def register_mcp(mcp):
         min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=max_days_to_present)
         
         for memory in mem:
-            try:
-                # recall by last modified date, or if absent, by original date
-                memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
-                if memory_date >= max_date_in_past and memory_date <= min_date_in_past:
-                    mem_filtered.append(memory)
+            # recall by last modified date, or if absent, by original date
+            memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
+            if memory_date >= max_date_in_past and memory_date <= min_date_in_past:
+                mem_filtered.append(memory)
             #except ValueError:
                 # If date parsing fails, include memory anyway
             #    mem_filtered.append(memory)
