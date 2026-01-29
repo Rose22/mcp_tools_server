@@ -1,6 +1,17 @@
 import subprocess
 import os
+import yaml
 import aiohttp
+
+def load_config():
+    if not os.path.exists("config.yaml"):
+        print("please provide a config.yaml file!")
+        exit()
+
+    with open("config.yaml", "r") as f:
+        config = yaml.safe_load(f)
+
+    return config
 
 def get_root_path():
     return os.path.dirname(os.path.abspath(__file__))

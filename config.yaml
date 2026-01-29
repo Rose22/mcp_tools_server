@@ -1,0 +1,20 @@
+# toggle your enabled modules here
+enabled_modules:
+  - system
+  - files
+  - networking
+  - database
+  - websearch
+  # careful with enabling direct shell command execution!
+  # - shell
+
+# set your transport type here (one of: stdio, sse, streamable-http, http)
+transport_type: stdio
+
+# -- if using a transport other than stdio:
+# host address
+network_host: 
+
+# port number
+network_port:
+
