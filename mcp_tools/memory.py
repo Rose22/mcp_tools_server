@@ -69,7 +69,7 @@ def register_mcp(mcp):
         
         for memory in mem:
             memory_date = datetime.datetime.strptime(
-                memory.get("last_modified", memory.get("date", "")), "%c"
+                memory.get("date"), "%c"
             )
             if start_date_obj <= memory_date <= end_date_obj:
                 mem_filtered.append(memory)
@@ -87,7 +87,6 @@ def register_mcp(mcp):
         3. ALWAYS use for user preferences/changes
         4. ALWAYS summarize in 1-2 concise paragraphs
         5. ALWAYS refer to user as "user", never "you" or "i"
-        6. NEVER store temporary or trivial information
         
         IMPORTANT: Use edit_memory instead if modifying existing visible memories. 
         A memory is "visible" ONLY if returned by get_memories() in current context.
@@ -136,7 +135,6 @@ def register_mcp(mcp):
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
                 memory["content"] = content
-                memory["last_modified"] = datetime.datetime.now().strftime("%c")
                 mem[index] = memory
                 success = write_mem(mem)
                 return utils.result({"success": success, "id": id})
