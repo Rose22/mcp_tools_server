@@ -43,7 +43,7 @@ def register_mcp(mcp):
         - Your own configuration/state information
 
         RETRIEVAL LOGIC:
-        1. ALL persistent memories are ALWAYS included (regardless of date)
+        1. ALL persistent memories are ALWAYS included (regardless of start date)
         2. Non-persistent memories are filtered by date range
 
         Args:
@@ -73,8 +73,9 @@ def register_mcp(mcp):
         
         for memory in mem:
             if memory.get("persistent", False):
-                # always include persistent memories
-                mem_filtered.append(memory)
+                # always include persistent memories in today's memories
+                if not end_date:
+                    mem_filtered.append(memory)
                 continue
 
             # filter non-persistent memories by date
