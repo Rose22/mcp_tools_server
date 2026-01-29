@@ -49,7 +49,8 @@ def register_mcp(mcp):
         
         for memory in mem:
             try:
-                memory_date = datetime.datetime.strptime(memory.get("date", ""), "%c")
+                # recall by last modified date, or if absent, by original date
+                memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
                 if memory_date >= cutoff_date:
                     mem_filtered.append(memory)
             except ValueError:
