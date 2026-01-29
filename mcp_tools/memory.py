@@ -52,7 +52,7 @@ def register_mcp(mcp):
         return utils.result(mem_filtered)
 
     @mcp.tool
-    def store_memory(title: str, description: str):
+    def store_memory(content: str):
         """
         Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation.
 
@@ -64,35 +64,35 @@ def register_mcp(mcp):
         mem = load_mem()
 
         mem.append({
+            "id": len(mem)+1,
             "date": datetime.datetime.now().strftime("%c"),
-            "title": title,
-            "description": description
+            "content": content
         })
 
         return utils.result(write_mem(mem))
 
     @mcp.tool
-    def delete_memory(title: str) -> dict:
-        """Deletes a memory by title. Use with caution!"""
+    def delete_memory(id: int) -> dict:
+        """Deletes a memory by id. To get the id, you first need to retrieve the memory using get_memories(). Use with caution!"""
         mem = load_mem()
         found_memory = False
         for index, memory in enumerate(mem):
-            if memory.get("title").strip().lower() == title.lower().strip():
+            if memory.get("id") == id:
                 del(mem[index])
                 found_memory = True
 
         if not found_memory:
-            return utils.result(None, "could not find memory with that title. get all memories first, so you can get the memory's title!")
+            return utils.result(None, "could not find memory with that ID. get all memories first, so you can get the memory's ID!")
 
         return utils.result(write_mem(mem))
 
     @mcp.tool
     def search_within_memories(query: str) -> dict:
-        """Searches your persistent memory storage for a specific term. Use ONLY if user specifies the exact thing to recall. Will search across date, title and description."""
+        """Searches your persistent memory storage for a specific term. Use ONLY if user specifies the exact thing to recall."""
         mem = load_mem()
         found_memories = []
         for memory in mem:
-            if query.lower() in (memory.get("title").lower(), memory.get("description").lower(), memory.get("date").lower()):
+            if query.lower() in (memory.get("content").lower(), memory.get("date").lower()):
                 found_memories.append(memory)
 
         return utils.result(found_memories)
