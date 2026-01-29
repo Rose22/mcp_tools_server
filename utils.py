@@ -4,11 +4,15 @@ import yaml
 import aiohttp
 
 def load_config():
-    if not os.path.exists("config.yaml"):
-        print("please provide a config.yaml file!")
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(script_dir, "config.yaml")
+
+    if not os.path.exists(config_path):
+        print(f"please provide a config.yaml file at {config_path}")
         exit()
 
-    with open("config.yaml", "r") as f:
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
     return config
