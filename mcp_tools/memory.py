@@ -27,7 +27,7 @@ def register_mcp(mcp):
             return False
 
     @mcp.tool
-    def get_memories(max_days_to_past: int = 30, max_days_to_present: int = 0):
+    def get_memories(start_days_ago: int = 30, stop_days_ago: int = 0):
         """
         Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
@@ -35,27 +35,34 @@ def register_mcp(mcp):
         1. You MUST call this before ANY memory-related operations (edit, delete, search)
         2. Only memories returned by this call are "currently visible" and available for editing/deleting
         3. Call this at conversation start to see what you should remember
-        4. The two parameters form a range: max_days_to_past specifies how far back to remember (in days). max_days_to_present specifies the cutoff point (in days) for the memory retrieval. Example: max_days_to_past: 30, max_days_to_present: 2, will retrieve memories from 30 days ago up to 2 days ago. max_days_to_present defaults to 0, which means it retrieves all memories up to the present.
 
         Information stored includes:
         - Past events and conversations
         - User preferences and personal details
         - Important facts about the user
         - Your own configuration/state information
+
+        Args:
+            start_days_ago (int): How many days ago to start (inclusive). 
+                e.g., 30 → includes memories from 30 days ago onward.
+            end_days_ago (int): How many days ago to stop (inclusive).
+                If 0, stops at today. Otherwise, stops at this number of days ago.
+        Examples:
+            - get_memories(30, 2) → Memories from 30 to 2 days ago
+            - get_memories(7, 0) → Memories from 7 days ago to today
+        Returns:
+            List of memories within the specified date range.
         """
         mem = load_mem()
         mem_filtered = []
-        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=max_days_to_past)
-        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=max_days_to_present)
+        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=start_days_ago)
+        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=stop_days_ago)
         
         for memory in mem:
             # recall by last modified date, or if absent, by original date
             memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
             if memory_date >= max_date_in_past and memory_date <= min_date_in_past:
                 mem_filtered.append(memory)
-            #except ValueError:
-                # If date parsing fails, include memory anyway
-            #    mem_filtered.append(memory)
         
         return utils.result(mem_filtered)
 
