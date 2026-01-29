@@ -327,4 +327,4 @@ please use markdown format!
 
     # load data types
     for data_type_name, data_type in config.get("data_types").items():
-        add_data_type(mcp, data_type_name, data_type.get("plural", data_type_name), retrieval_instructions=data_type.get("retrieval_intructions", None), generation_instructions=data_type.get("generation_instructions", None))
+        add_data_type(mcp, data_type_name, data_type.get("plural", data_type_name), retrieval_instructions=data_type.get("retrieval_instructions", None), generation_instructions=data_type.get("generation_instructions", None))
