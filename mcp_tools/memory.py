@@ -72,6 +72,17 @@ def register_mcp(mcp):
         return utils.result(write_mem(mem))
 
     @mcp.tool
+    def edit_memory(id: int, content: str):
+        """Edits a memory. Ensure you've retrieved the memory first!!"""
+        mem = load_mem()
+        for index, memory in enumerate(mem):
+            if memory.get("id") == id:
+                memory["content"] = content
+                mem[index] = memory
+                return utils.result(True)
+        return utils.result(None, "could not find memory")
+
+    @mcp.tool
     def delete_memory(id: int) -> dict:
         """Deletes a memory by id. To get the id, you first need to retrieve the memory using get_memories(). Use with caution!"""
         mem = load_mem()
