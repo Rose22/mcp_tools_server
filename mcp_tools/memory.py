@@ -51,11 +51,6 @@ def register_mcp(mcp):
                 If None, defaults to 30 days ago.
             end_date (str, optional): End date in "YYYY-MM-DD" format.
                 If None, defaults to today.
-
-        Examples:
-            - get_memories("2024-01-01", "2024-12-31") → Only 2024 memories
-            - get_memories("2024-06-01", None) → June 1, 2024 to today
-            - get_memories(None, None) → Last 30 days
         """
         # Parse or default dates
         if end_date is None:
