@@ -28,25 +28,24 @@ def register_mcp(mcp):
         if len(result) <= 1:
             return utils.result(None, "could not reach address")
         return utils.result(result)
-    mcp.tool(ping) if shutil.which("ping") else None
+    if shutil.which("ping"): mcp.tool(ping)
 
     def list_open_ports() -> dict:
         """list currently open ports on user's pc"""
         return utils.sh_exec_result(f"lsof -i")
-    mcp.tool(list_open_ports) if shutil.which("lsof") else None
+    if shutil.which("lsof"): mcp.tool(list_open_ports)
 
     def traceroute(addr: str) -> dict:
         """performs a traceroute on an ip address or domain"""
         return utils.sh_exec_result(f"traceroute {addr}")
-    mcp.tool(traceroute) if shutil.which("traceroute") else None
+    if shutil.which("traceroute"): mcp.tool(traceroute)
 
     def whois(addr: str) -> dict:
         """performs a WHOIS request on an ip address or domain"""
         return utils.sh_exec_result(f"whois {addr}")
-    mcp.tool(whois) if shutil.which("whois") else None
+    if shutil.which("whois"): mcp.tool(whois)
 
     def nmap(target: str) -> dict:
         """runs an NMAP port scan on your chosen target"""
         return utils.sh_exec_result(f"nmap {target}")
-    mcp.tool(nmap) if shutil.which("nmap") else None
-
+    if shutil.which("nmap"): mcp.tool(nmap)
