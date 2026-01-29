@@ -27,7 +27,7 @@ def register_mcp(mcp):
             return False
 
     @mcp.tool
-    def get_memories(start_days_ago: int = 30, stop_days_ago: int = 0):
+    def get_memories(start_date: str = None, end_date: str = None):
         """
         Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
@@ -43,25 +43,35 @@ def register_mcp(mcp):
         - Your own configuration/state information
 
         Args:
-            start_days_ago (int): How many days ago to start (inclusive). 
-                e.g., 30 → includes memories from 30 days ago onward.
-            end_days_ago (int): How many days ago to stop (inclusive).
-                If 0, stops at today. Otherwise, stops at this number of days ago.
+            start_date (str, optional): Start date in "YYYY-MM-DD" format.
+                If None, defaults to 30 days ago.
+            end_date (str, optional): End date in "YYYY-MM-DD" format.
+                If None, defaults to today.
+
         Examples:
-            - get_memories(30, 2) → Memories from 30 to 2 days ago
-            - get_memories(7, 0) → Memories from 7 days ago to today
-        Returns:
-            List of memories within the specified date range.
+            - get_memories("2024-01-01", "2024-12-31") → Only 2024 memories
+            - get_memories("2024-06-01", None) → June 1, 2024 to today
+            - get_memories(None, None) → Last 30 days
         """
+        # Parse or default dates
+        if end_date is None:
+            end_date_obj = datetime.datetime.now()
+        else:
+            end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+        
+        if start_date is None:
+            start_date_obj = end_date_obj - timedelta(days=30)
+        else:
+            start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+        
         mem = load_mem()
         mem_filtered = []
-        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=start_days_ago)
-        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=stop_days_ago)
         
         for memory in mem:
-            # recall by last modified date, or if absent, by original date
-            memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
-            if memory_date >= max_date_in_past and memory_date <= min_date_in_past:
+            memory_date = datetime.datetime.strptime(
+                memory.get("last_modified", memory.get("date", "")), "%c"
+            )
+            if start_date_obj <= memory_date <= end_date_obj:
                 mem_filtered.append(memory)
         
         return utils.result(mem_filtered)
