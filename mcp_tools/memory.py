@@ -21,81 +21,63 @@ def register_mcp(mcp):
     def write_mem(mem):
         try:
             with open(memory_path, "w") as f:
-                f.write(json.dumps(mem))
+                f.write(json.dumps(mem, indent=2))
             return True
         except:
             return False
 
-    # Track which memory IDs were retrieved in this conversation
-    retrieved_memory_ids = set()
-
     @mcp.tool
     def get_memories(max_days_ago: int = 30):
         """
-        Retrieves memories from persistent storage. Call this proactively whenever you need context about:
-        - Past conversations and events
-        - User preferences and habits
-        - Personal information about the user
-        - Previous interactions or agreements
+        Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
-        **Important:** Do not assume information exists in your context window. Always retrieve memories when discussing anything from the past.
+        CRITICAL RULES:
+        1. You MUST call this before ANY memory-related operations (edit, delete, search)
+        2. Only memories returned by this call are "currently visible" and available for editing/deleting
+        3. Call this at conversation start to see what you should remember
+        4. Use max_days_ago to filter by recency
+
+        Information stored includes:
+        - Past events and conversations
+        - User preferences and personal details
+        - Important facts about the user
+        - Your own configuration/state information
         """
         mem = load_mem()
         mem_filtered = []
+        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=max_days_ago)
+        
         for memory in mem:
-            date_raw = datetime.datetime.strptime(memory.get("date"), "%c")
-            date_past = date_raw - datetime.timedelta(days=max_days_ago)
-
-            if date_raw >= date_past:
+            try:
+                memory_date = datetime.datetime.strptime(memory.get("date", ""), "%c")
+                if memory_date >= cutoff_date:
+                    mem_filtered.append(memory)
+            except ValueError:
+                # If date parsing fails, include memory anyway
                 mem_filtered.append(memory)
-                # Track that this memory was retrieved
-                retrieved_memory_ids.add(memory.get("id"))
-
+        
         return utils.result(mem_filtered)
-
-    @mcp.tool
-    def search_within_memories(query: str) -> dict:
-        """Searches memories for specific keywords. Returns matching memories with their IDs."""
-        mem = load_mem()
-        found_memories = []
-        for memory in mem:
-            found_memory = False
-            for word in memory.get("content").split():
-                if found_memory:
-                    continue
-
-                if word.lower() in query.lower():
-                    found_memories.append(memory)
-                    found_memory = True
-                    # Track that this memory was retrieved
-                    retrieved_memory_ids.add(memory.get("id"))
-
-            if found_memory:
-                continue
-
-            if query.lower() in memory.get("date").lower():
-                found_memories.append(memory)
-                retrieved_memory_ids.add(memory.get("id"))
-
-        return utils.result(found_memories)
 
     @mcp.tool
     def store_memory(content: str):
         """
-        Saves important information to persistent memory for future conversations.
+        Stores a memory for future use. You MUST use this to retain information across conversations.
 
-        Use when:
-        - User shares personal information (preferences, background, goals)
-        - Important facts are established
-        - Agreements or preferences are made
-        - Information needed in future conversations
-
-        Write from neutral perspective. Keep to one paragraph. Use "user", not "you" or "I".
+        STORAGE RULES:
+        1. ALWAYS use when user provides new personal information
+        2. ALWAYS use for important conversation outcomes
+        3. ALWAYS use for user preferences/changes
+        4. ALWAYS summarize in 1-2 concise paragraphs
+        5. ALWAYS refer to user as "user", never "you" or "i"
+        6. NEVER store temporary or trivial information
+        
+        IMPORTANT: Use edit_memory instead if modifying existing visible memories. 
+        A memory is "visible" ONLY if returned by get_memories() in current context.
         """
         mem = load_mem()
 
-        highest_id = max([memory.get("id", 0) for memory in mem], default=0)
-        highest_id += 1
+        # Generate new ID
+        highest_id = max([m.get("id", 0) for m in mem], default=0) + 1
 
         mem.append({
             "id": highest_id,
@@ -103,49 +85,108 @@ def register_mcp(mcp):
             "content": content
         })
 
-        return utils.result(write_mem(mem))
+        success = write_mem(mem)
+        return utils.result({"id": highest_id, "success": success})
 
     @mcp.tool
     def edit_memory(id: int, content: str):
         """
-        Edits an existing memory. ONLY works if you just retrieved this memory ID using get_memories() or search_within_memories() in this conversation.
-
-        The memory ID must be visible in your recent tool results.
+        MODIFIES AN EXISTING MEMORY. EXTREME RESTRICTIONS APPLY:
+        
+        YOU MAY ONLY EDIT MEMORIES THAT ARE CURRENTLY VISIBLE
+        
+        VISIBILITY REQUIREMENTS:
+        1. You MUST have called get_memories() in this conversation
+        2. The target memory MUST be in the returned results
+        3. You MUST have the exact ID from get_memories() results
+        
+        REJECT EDITING IF:
+        - You haven't called get_memories() recently
+        - The ID isn't in get_memories() results
+        - User mentions a memory but hasn't shown you the ID
+        - You're guessing about which memory to edit
+        
+        PROPER USAGE:
+        1. Call get_memories() to see available memories
+        2. Verify target memory appears in results
+        3. Extract exact ID from those results
+        4. Only then call edit_memory()
         """
-        # ENFORCE: Memory must have been retrieved first
-        if id not in retrieved_memory_ids:
-            return utils.result(
-                None, 
-                f"ERROR: Cannot edit memory {id}. You must call get_memories() or search_within_memories() first to retrieve the memory you want to edit. This prevents accidental edits to memories you haven't reviewed."
-            )
-
         mem = load_mem()
+        
+        # Check if memory exists
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
                 memory["content"] = content
+                memory["last_modified"] = datetime.datetime.now().strftime("%c")
                 mem[index] = memory
-                return utils.result(write_mem(mem))
+                success = write_mem(mem)
+                return utils.result({"success": success, "id": id})
         
-        return utils.result(None, "Memory not found in storage.")
+        return utils.result(
+            {"success": False, "error": f"Memory ID {id} not found. You must call get_memories() first to see available memories and their IDs."}
+        )
 
     @mcp.tool
     def delete_memory(id: int) -> dict:
         """
-        Deletes a memory from storage. ONLY works if you just retrieved this memory ID using get_memories() or search_within_memories() in this conversation.
-
-        The memory ID must be visible in your recent tool results. Use with caution!
+        PERMANENTLY DELETES A MEMORY. HIGHEST RESTRICTIONS APPLY
+        
+        YOU MAY ONLY DELETE MEMORIES THAT ARE CURRENTLY VISIBLE
+        
+        VISIBILITY REQUIREMENTS:
+        1. You MUST have called get_memories() in this conversation
+        2. The target memory MUST be in the returned results
+        3. You MUST have the exact ID from get_memories() results
+        4. User MUST explicitly request deletion of this specific ID
+        
+        REJECT DELETION IF:
+        - You haven't called get_memories() recently
+        - The ID isn't in get_memories() results
+        - User asks to delete "that memory about X" without showing you the ID
+        - You're making assumptions about which memory to delete
+        
+        PROPER USAGE:
+        1. Call get_memories() to see available memories
+        2. Verify target memory appears in results
+        3. Extract exact ID from those results
+        4. Confirm user wants THIS SPECIFIC ID deleted
+        5. Only then call delete_memory()
         """
-        # ENFORCE: Memory must have been retrieved first
-        if id not in retrieved_memory_ids:
-            return utils.result(
-                None,
-                f"ERROR: Cannot delete memory {id}. You must call get_memories() or search_within_memories() first to retrieve the memory you want to delete. This is a safety measure to prevent accidental deletions."
-            )
-
         mem = load_mem()
+        
+        # Check if memory exists
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
-                del(mem[index])
-                return utils.result(write_mem(mem))
+                del mem[index]
+                success = write_mem(mem)
+                return utils.result({"success": success, "deleted_id": id})
+        
+        return utils.result(
+            {"success": False, "error": f"Memory ID {id} not found. You must call get_memories() first to see available memories and their IDs."}
+        )
 
-        return utils.result(None, "Memory not found in storage.")
+    @mcp.tool
+    def search_within_memories(query: str) -> dict:
+        """
+        Searches memory contents for specific terms. Returns matching memories with their IDs.
+        
+        USE WHEN:
+        - User asks for something specific (e.g., "find memories about vacation")
+        - You need to locate memories containing certain keywords
+        - You want to filter memories by content
+        
+        NOTE: Results from this search become "visible" for editing/deleting.
+        """
+        mem = load_mem()
+        found_memories = []
+        query_lower = query.lower()
+        
+        for memory in mem:
+            content = memory.get("content", "").lower()
+            date_str = memory.get("date", "").lower()
+            
+            if (query_lower in content) or (query_lower in date_str):
+                found_memories.append(memory)
+        
+        return utils.result(found_memories)
