@@ -96,6 +96,8 @@ def register_mcp(mcp):
             for word in memory.get("content"):
                 if word in query:
                     found_memories.append(memory)
+                    found_memory = True
+                    break
             if found_memory:
                 continue
 
