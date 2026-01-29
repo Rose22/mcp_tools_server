@@ -325,11 +325,6 @@ please use markdown format!
             if name not in ("trash")
         ])
 
-    # ------------
-    # add data types here!
-    # ----------------------
-    for data_type in config.get("data_types"):
-        if "name" not in data_type or "name_plural" not in data_type:
-            continue
-
-        add_data_type(mcp, data_type.get("name"), data_type.get("name_plural"), additional_instructions=data_type.get("instructions", None))
+    # load data types
+    for data_type_name, data_type in config.get("data_types").items():
+        add_data_type(mcp, data_type_name, data_type.get("plural", data_type_name), additional_instructions=data_type.get("instructions", None))
