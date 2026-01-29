@@ -21,7 +21,6 @@ def register_mcp(mcp):
         elif OS == "darwin":
             return utils.sh_exec_result("ifconfig")
 
-    @mcp.tool()
     def ping(addr: str) -> dict:
         """pings a specified IP address or domain"""
 
@@ -29,18 +28,25 @@ def register_mcp(mcp):
         if len(result) <= 1:
             return utils.result(None, "could not reach address")
         return utils.result(result)
+    mcp.tool(ping) if shutil.which("ping") else None
 
-    @mcp.tool()
     def list_open_ports() -> dict:
         """list currently open ports on user's pc"""
         return utils.sh_exec_result(f"lsof -i")
+    mcp.tool(list_open_ports) if shutil.which("lsof") else None
 
-    @mcp.tool()
     def traceroute(addr: str) -> dict:
         """performs a traceroute on an ip address or domain"""
         return utils.sh_exec_result(f"traceroute {addr}")
+    mcp.tool(traceroute) if shutil.which("traceroute") else None
 
-    @mcp.tool()
     def whois(addr: str) -> dict:
         """performs a WHOIS request on an ip address or domain"""
         return utils.sh_exec_result(f"whois {addr}")
+    mcp.tool(whois) if shutil.which("whois") else None
+
+    def nmap(target: str) -> dict:
+        """runs an NMAP port scan on your chosen target"""
+        return utils.sh_exec_result(f"nmap {target}")
+    mcp.tool(nmap) if shutil.which("nmap") else None
+
