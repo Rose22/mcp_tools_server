@@ -39,6 +39,7 @@ def register_mcp(mcp):
 
         use max_days_ago to specify how many days into the past you want to remember.
         """
+
         mem = load_mem()
         mem_filtered = []
         for memory in mem:
@@ -52,7 +53,14 @@ def register_mcp(mcp):
 
     @mcp.tool
     def store_memory(title: str, description: str):
-        """Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation. Summarize the memory before storing it, keep it to one paragraph."""
+        """
+        Stores a memory into your persistent memory storage. You ALWAYS need to use this tool when information must be remembered in future conversations with the user! Without using this tool, you will forget everything within the current context when user starts a new conversation.
+
+        RULES:
+        - Always refer to user as "user", never "you" or "i".
+        - Summarize the memory before storing it. Keep it to one paragraph.
+        - Prefer storing information given by user into memory whenever possible.
+        """
         mem = load_mem()
 
         mem.append({
