@@ -73,13 +73,13 @@ def register_mcp(mcp):
 
     @mcp.tool
     def edit_memory(id: int, content: str):
-        """Edits a memory. Ensure you've retrieved the memory first!!"""
+        """Edits the content of a memory. Ensure you have the memory's ID first!!"""
         mem = load_mem()
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
                 memory["content"] = content
                 mem[index] = memory
-                return utils.result(True)
+                return utils.result(write_mem(mem))
         return utils.result(None, "could not find memory")
 
     @mcp.tool
