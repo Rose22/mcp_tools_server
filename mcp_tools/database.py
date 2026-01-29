@@ -216,7 +216,7 @@ def register_mcp(mcp):
     # ------
     # now for the secret sauce!
     # -----------
-    def add_data_type(mcp, type_name_plural, type_name_singular, additional_instructions=""):
+    def add_data_type(mcp, type_name_singular, type_name_plural, additional_instructions=""):
         """
         this dynamically creates MCP tools based on a given data type.
         it does this by defining a wrapper function and passing it
