@@ -92,7 +92,7 @@ def register_mcp(mcp):
 
     @mcp.tool
     def delete_memory(id: int) -> dict:
-        """Deletes a memory by id. To get the id, you first need to retrieve the memory using get_memories(). Use with caution!"""
+        """Deletes a memory by id. To get the id, you first need to retrieve the memory using get_memories(). Make sure to ALWAYS use the ID linked to the memory you're trying to delete. Use with caution!"""
         mem = load_mem()
         found_memory = False
         for index, memory in enumerate(mem):
