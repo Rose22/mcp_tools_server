@@ -27,7 +27,7 @@ def register_mcp(mcp):
             return False
 
     @mcp.tool
-    def get_memories(max_days_ago: int = 30):
+    def get_memories(max_days_to_past: int = 30, max_days_to_present: int = 0):
         """
         Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
@@ -35,7 +35,7 @@ def register_mcp(mcp):
         1. You MUST call this before ANY memory-related operations (edit, delete, search)
         2. Only memories returned by this call are "currently visible" and available for editing/deleting
         3. Call this at conversation start to see what you should remember
-        4. Use max_days_ago to filter by recency
+        4. The two parameters form a range: max_days_to_past specifies how far back to remember (in days). max_days_to_present specifies the cutoff point (in days) for the memory retrieval. Example: max_days_to_past: 30, max_days_to_present: 2, will retrieve memories from 30 days ago up to 2 days ago. max_days_to_present defaults to 0, which means it retrieves all memories up to the present.
 
         Information stored includes:
         - Past events and conversations
@@ -45,17 +45,18 @@ def register_mcp(mcp):
         """
         mem = load_mem()
         mem_filtered = []
-        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=max_days_ago)
+        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=max_days_to_past)
+        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=max_days_to_present)
         
         for memory in mem:
             try:
                 # recall by last modified date, or if absent, by original date
                 memory_date = datetime.datetime.strptime(memory.get("last_modified", memory.get("date", "")), "%c")
-                if memory_date >= cutoff_date:
+                if memory_date >= max_date_in_past and memory_date <= min_date_in_past:
                     mem_filtered.append(memory)
-            except ValueError:
+            #except ValueError:
                 # If date parsing fails, include memory anyway
-                mem_filtered.append(memory)
+            #    mem_filtered.append(memory)
         
         return utils.result(mem_filtered)
 
