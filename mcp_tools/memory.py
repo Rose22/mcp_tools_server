@@ -5,9 +5,13 @@ import datetime
 import re
 
 memory_path = f"{utils.get_root_path()}/memory.mp"
+cached_mem = None
 
 def register_mcp(mcp):
     def load_mem():
+        if cached_mem:
+            return cached_mem
+
         if not os.path.exists(memory_path):
             with open(memory_path, "wb") as f:
                 f.write(msgpack.dumps([]))
@@ -15,6 +19,8 @@ def register_mcp(mcp):
         try:
             with open(memory_path, "rb") as f:
                 data = msgpack.load(f)
+            cached_mem = data.copy()
+
             return data
         except:
             return []
