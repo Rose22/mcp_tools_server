@@ -91,8 +91,8 @@ def register_mcp(mcp):
         mem = load_mem()
         mem_filtered = []
 
-        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=from_days_ago)
-        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=to_days_ago)
+        max_date_in_past = datetime.date.today() - datetime.timedelta(days=from_days_ago)
+        min_date_in_past = datetime.date.today() - datetime.timedelta(days=to_days_ago)
         
         for memory in mem:
             if memory.get("persistent", False):
@@ -102,7 +102,7 @@ def register_mcp(mcp):
                 continue
 
             # filter non-persistent memories by date
-            memory_date = datetime.datetime.fromisoformat(memory.get("date"))
+            memory_date = datetime.date.fromisoformat(memory.get("date"))
             if max_date_in_past <= memory_date <= min_date_in_past:
                 mem_filtered.append(memory)
         
