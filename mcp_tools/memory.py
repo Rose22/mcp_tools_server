@@ -2,6 +2,7 @@ import utils
 import os
 import json
 import datetime
+import re
 
 memory_path = f"{utils.get_root_path()}/memory.json"
 
@@ -25,6 +26,24 @@ def register_mcp(mcp):
             return True
         except:
             return False
+
+    def _filter_memory_content(content):
+        # replace common phrases in memory content
+
+        replacement_map = {
+            "today": "on this day",
+            "yesterday": "the day before this day",
+            "now": "at the time",
+            "tomorrow": "the day after this day",
+            "last week": "a week before this day",
+            "next week": "a week after this day"
+        }
+        
+        for orig, replacement in replacement_map.items():
+            # case insensitive replace
+            content = re.sub(orig, replacement, content, flags=re.IGNORECASE)
+
+        return content
 
     @mcp.tool
     def get_memories(from_days_ago: int = 30, to_days_ago: int = 0):
@@ -121,21 +140,10 @@ def register_mcp(mcp):
         - store_memory("User mentioned feeling tired today and wants to reschedule", persistent=False)
         """
         mem = load_mem()
+        content = _filter_memory_content(content)
 
         # Generate new ID
         highest_id = max([m.get("id", 0) for m in mem], default=0) + 1
-
-        replacement_map = {
-            "today": "on this day",
-            "yesterday": "the day before this day",
-            "now": "at the time",
-            "tomorrow": "the day after this day",
-            "last week": "a week before this day",
-            "next week": "a week after this day"
-        }
-        
-        for orig, replacement in replacement_map.items():
-            content = content.replace(orig, replacement)
 
         new_mem = {
             "id": highest_id,
@@ -176,6 +184,7 @@ def register_mcp(mcp):
         4. Only then call edit_memory()
         """
         mem = load_mem()
+        content = _filter_memory_content(content)
         
         # Check if memory exists
         for index, memory in enumerate(mem):
