@@ -2,20 +2,11 @@ import os
 import platform
 import shutil
 import psutil
-import datetime
 import json
 
 import utils
 
 OS = platform.system().lower()
-# temporary override
-#OS = "windows"
-
-# --- information ---
-def get_datetime() -> dict:
-    """gets the current time and date"""
-
-    return utils.result(datetime.datetime.now().strftime("%H:%M %d-%M-%Y"))
 
 def get_system_info() -> dict:
     """returns information about user's PC"""
@@ -443,7 +434,6 @@ def media_stop() -> dict:
     return utils.sh_exec_result("playerctl stop")
 
 def register_mcp(mcp):
-    mcp.tool(get_datetime)
     mcp.tool(get_home_dir_path)
     mcp.tool(get_system_info)
     mcp.tool(get_running_processes)
