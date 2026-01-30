@@ -9,6 +9,7 @@ network_port:
 
 # toggle your enabled modules here
 enabled_modules:
+  - time
   - memory
   - database
   - reader
