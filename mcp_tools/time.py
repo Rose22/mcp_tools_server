@@ -6,7 +6,7 @@ def register_mcp(mcp):
     def get_datetime() -> dict:
         """gets the current time and date. ALWAYS call this before assuming what date today is! NEVER assume or guess today's date."""
 
-    return utils.result(datetime.datetime.now().strftime("%c"))
+        return utils.result(datetime.datetime.now().strftime("%c"))
 
     @mcp.tool
     def get_time() -> dict:
