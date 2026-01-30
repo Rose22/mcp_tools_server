@@ -1,28 +1,36 @@
 import utils
 import os
-import json
+import msgpack
 import datetime
 import re
 
-memory_path = f"{utils.get_root_path()}/memory.json"
+memory_path = f"{utils.get_root_path()}/memory.mp"
+cached_mem = None
 
 def register_mcp(mcp):
     def load_mem():
+        global cached_mem
+
+        if cached_mem:
+            return cached_mem
+
         if not os.path.exists(memory_path):
-            with open(memory_path, "w") as f:
-                f.write(json.dumps([]))
+            with open(memory_path, "wb") as f:
+                f.write(msgpack.dumps([]))
 
         try:
-            with open(memory_path, "r") as f:
-                data = json.load(f)
+            with open(memory_path, "rb") as f:
+                data = msgpack.load(f)
+            cached_mem = data.copy()
+
             return data
         except:
             return []
 
     def write_mem(mem):
         try:
-            with open(memory_path, "w") as f:
-                f.write(json.dumps(mem, indent=2))
+            with open(memory_path, "wb") as f:
+                f.write(msgpack.dumps(mem))
             return True
         except:
             return False
