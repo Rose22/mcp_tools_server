@@ -33,7 +33,7 @@ def register_mcp(mcp):
             with open(memory_path, "wb") as f:
                 f.write(msgpack.dumps(mem))
             return True
-        except Exception as e:
+        except:
             return False
 
     def _filter_memory_content(content):
