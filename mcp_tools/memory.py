@@ -58,7 +58,7 @@ def register_mcp(mcp):
             - get_memories(30, 7) → Last 30 days up until 7 days before today
             - get_memories(1, 1) → Only yesterday
             - get_memories(365, 0) → A whole year up until today
-            - get_memories(730, 365) → Last year (start of last year up until end of last year)
+            - get_memories(730, 365) → Last year (730 days = 2 years ago, 365 days = 1 year ago)
             - get_memories(7, 7) → Exactly 7 days ago, without any other days included
         """
         mem = load_mem()
