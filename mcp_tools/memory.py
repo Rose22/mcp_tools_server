@@ -9,11 +9,11 @@ memory_path = f"{utils.get_root_path()}/memory.mp"
 def register_mcp(mcp):
     def load_mem():
         if not os.path.exists(memory_path):
-            with open(memory_path, "w") as f:
+            with open(memory_path, "wb") as f:
                 f.write(msgpack.dumps([]))
 
         try:
-            with open(memory_path, "r") as f:
+            with open(memory_path, "rb") as f:
                 data = msgpack.load(f)
             return data
         except:
@@ -21,7 +21,7 @@ def register_mcp(mcp):
 
     def write_mem(mem):
         try:
-            with open(memory_path, "w") as f:
+            with open(memory_path, "wb") as f:
                 f.write(msgpack.dumps(mem))
             return True
         except:
