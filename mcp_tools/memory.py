@@ -6,6 +6,7 @@ import re
 
 memory_path = f"{utils.get_root_path()}/memory.mp"
 cached_mem = None
+datetime_format = "%Y-%m-%d %H:%M:%S"
 
 def register_mcp(mcp):
     def load_mem():
@@ -32,7 +33,7 @@ def register_mcp(mcp):
             with open(memory_path, "wb") as f:
                 f.write(msgpack.dumps(mem))
             return True
-        except:
+        except Exception as e:
             return False
 
     def _filter_memory_content(content):
@@ -103,7 +104,7 @@ def register_mcp(mcp):
 
             # filter non-persistent memories by date
             memory_date = datetime.datetime.strptime(
-                memory.get("date"), "%c"
+                memory.get("date"), datetime_format
             )
             if max_date_in_past <= memory_date <= min_date_in_past:
                 mem_filtered.append(memory)
@@ -155,7 +156,7 @@ def register_mcp(mcp):
 
         new_mem = {
             "id": highest_id,
-            "date": datetime.datetime.now().strftime("%c"),
+            "date": datetime.datetime.now().strftime(datetime_format),
             "content": content
         }
 
