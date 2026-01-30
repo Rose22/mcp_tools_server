@@ -11,7 +11,7 @@ it's cross platform and what tools your LLM will see depends on what operating s
 it enables your chosen AI assistant to:
 
 - search the web using duckduckgo (no API key needed, we use page scraping)
-- store memories and retrieve them across conversations. there are memories that are tied to the date they were stored, and there are "persistent" memories (for things like your personal preferences and anything you want the AI to always remember no matter how long ago it was). the memory storage remains snappy because it remembers only 30 days into the past by default, but you can ask the AI to remember further back! memory is stored in a json file.
+- store memories and retrieve them across conversations. there are memories that are tied to the date they were stored, and there are "persistent" memories (for things like your personal preferences and anything you want the AI to always remember no matter how long ago it was). the memory storage remains snappy because it remembers only 30 days into the past by default, but you can ask the AI to remember further back! memory is stored in msgpack format, for super-fast and compact storage.
 - get the current time/date
 - browse, read and modify your files (with safety features such as automatic backups before modification)
 - read and process a wide range of file types (it can do things like look inside zip archives, see video metadata, stuff like that)
