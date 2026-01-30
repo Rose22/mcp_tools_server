@@ -9,6 +9,8 @@ cached_mem = None
 
 def register_mcp(mcp):
     def load_mem():
+        global cached_mem
+
         if cached_mem:
             return cached_mem
 
