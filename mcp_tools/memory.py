@@ -66,7 +66,7 @@ def register_mcp(mcp):
         for memory in mem:
             if memory.get("persistent", False):
                 # always include persistent memories in today's memories
-                if not end_date:
+                if not to_days_ago:
                     mem_filtered.append(memory)
                 continue
 
