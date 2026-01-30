@@ -102,9 +102,7 @@ def register_mcp(mcp):
                 continue
 
             # filter non-persistent memories by date
-            memory_date = datetime.datetime.strptime(
-                memory.get("date"), "%c"
-            )
+            memory_date = datetime.datetime.fromisoformat(memory.get("date"))
             if max_date_in_past <= memory_date <= min_date_in_past:
                 mem_filtered.append(memory)
         
@@ -155,7 +153,7 @@ def register_mcp(mcp):
 
         new_mem = {
             "id": highest_id,
-            "date": datetime.datetime.now().strftime("%c"),
+            "date": datetime.datetime.now().isoformat(),
             "content": content
         }
 
