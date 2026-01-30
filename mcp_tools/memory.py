@@ -198,9 +198,9 @@ def register_mcp(mcp):
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
                 memory["content"] = content
-                mem[index] = memory
                 if persistent != None:
-                    mem["persistent"] = persistent
+                    memory["persistent"] = persistent
+                mem[index] = memory
 
                 success = write_mem(mem)
                 return utils.result({"success": success, "id": id})
