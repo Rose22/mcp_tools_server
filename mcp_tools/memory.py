@@ -91,18 +91,18 @@ def register_mcp(mcp):
         mem = load_mem()
         mem_filtered = []
 
-        max_date_in_past = datetime.datetime.now() - datetime.timedelta(days=from_days_ago)
-        min_date_in_past = datetime.datetime.now() - datetime.timedelta(days=to_days_ago)
+        max_date_in_past = datetime.date.today() - datetime.timedelta(days=from_days_ago)
+        min_date_in_past = datetime.date.today() - datetime.timedelta(days=to_days_ago)
         
         for memory in mem:
             if memory.get("persistent", False):
-                # always include persistent memories in today's memories
-                if not to_days_ago:
+                # include persistent memories if no date range was set
+                if from_days_ago == 30 and not to_days_ago:
                     mem_filtered.append(memory)
                 continue
 
             # filter non-persistent memories by date
-            memory_date = datetime.datetime.fromisoformat(memory.get("date"))
+            memory_date = datetime.date.fromisoformat(memory.get("date"))
             if max_date_in_past <= memory_date <= min_date_in_past:
                 mem_filtered.append(memory)
         
@@ -153,7 +153,7 @@ def register_mcp(mcp):
 
         new_mem = {
             "id": highest_id,
-            "date": datetime.datetime.now().isoformat(),
+            "date": datetime.date.today().isoformat(),
             "content": content
         }
 
@@ -166,7 +166,7 @@ def register_mcp(mcp):
         return utils.result({"id": highest_id, "success": success})
 
     @mcp.tool
-    def edit_memory(id: int, content: str):
+    def edit_memory(id: int, content: str, persistent: bool = None):
         """
         MODIFIES AN EXISTING MEMORY. EXTREME RESTRICTIONS APPLY:
         
@@ -188,6 +188,8 @@ def register_mcp(mcp):
         2. Verify target memory appears in results
         3. Extract exact ID from those results
         4. Only then call edit_memory()
+
+        Do not modify persistent flag unless explicitely requested.
         """
         mem = load_mem()
         content = _filter_memory_content(content)
@@ -196,7 +198,10 @@ def register_mcp(mcp):
         for index, memory in enumerate(mem):
             if memory.get("id") == id:
                 memory["content"] = content
+                if persistent != None:
+                    memory["persistent"] = persistent
                 mem[index] = memory
+
                 success = write_mem(mem)
                 return utils.result({"success": success, "id": id})
         
