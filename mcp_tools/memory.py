@@ -153,7 +153,7 @@ def register_mcp(mcp):
 
         new_mem = {
             "id": highest_id,
-            "date": datetime.datetime.now().isoformat(),
+            "date": datetime.date.today().isoformat(),
             "content": content
         }
 
