@@ -11,10 +11,12 @@ it's cross platform and what tools your LLM will see depends on what operating s
 it enables your chosen AI assistant to:
 
 - search the web using duckduckgo (no API key needed, we use page scraping)
+- store memories and retrieve them across conversations. there are memories that are tied to the date they were stored, and there are "persistent" memories (for things like your personal preferences and anything you want the AI to always remember no matter how long ago it was). the memory storage remains snappy because it remembers only 30 days into the past by default, but you can ask the AI to remember further back! memory is stored in a json file.
+- get the current time/date
 - browse, read and modify your files (with safety features such as automatic backups before modification)
 - read and process a wide range of file types (it can do things like look inside zip archives, see video metadata, stuff like that)
 - read and process remote URLs (links) of those same file types and with the same extraction abilities
-- manage a complete life organization system for you with notes, tasks, events/calendar/appointments, bookmarks, recipes, and so on. it's stored as a plain text markdown database (basically just a simple human readable folder) so it can easily be copied or backed up and you don't have to worry about being locked in to a database format!
+- manage a complete life organization system for you with notes, tasks, events/calendar/appointments, bookmarks, recipes, and so on. it's stored as a plain text markdown database (basically just a simple human readable folder) so it can easily be copied or backed up and you don't have to worry about being locked in to a database format! you can completely customize what types of objects you want in your database by editing the ```config.yaml````` file
 - control a bunch of things about your device (it can even lock your screen!)
 - get a ton of information about your device and then use it to diagnose problems
 - transcribe youtube videos
