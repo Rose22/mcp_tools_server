@@ -97,7 +97,7 @@ def register_mcp(mcp):
         for memory in mem:
             if memory.get("persistent", False):
                 # include persistent memories if no date range was set
-                if from_days_ago != 30 and not to_days_ago:
+                if from_days_ago == 30 and not to_days_ago:
                     mem_filtered.append(memory)
                 continue
 
