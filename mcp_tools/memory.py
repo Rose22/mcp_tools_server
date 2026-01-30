@@ -125,6 +125,18 @@ def register_mcp(mcp):
         # Generate new ID
         highest_id = max([m.get("id", 0) for m in mem], default=0) + 1
 
+        replacement_map = {
+            "today": "on this day",
+            "yesterday": "the day before this day",
+            "now": "at the time",
+            "tomorrow": "the day after this day",
+            "last week": "a week before this day",
+            "next week": "a week after this day"
+        }
+        
+        for orig, replacement in replacement_map.items():
+            content = content.replace(orig, replacement)
+
         new_mem = {
             "id": highest_id,
             "date": datetime.datetime.now().strftime("%c"),
