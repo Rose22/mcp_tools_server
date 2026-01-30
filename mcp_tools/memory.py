@@ -166,7 +166,7 @@ def register_mcp(mcp):
         return utils.result({"id": highest_id, "success": success})
 
     @mcp.tool
-    def edit_memory(id: int, content: str):
+    def edit_memory(id: int, content: str, persistent: bool = None):
         """
         MODIFIES AN EXISTING MEMORY. EXTREME RESTRICTIONS APPLY:
         
@@ -188,6 +188,8 @@ def register_mcp(mcp):
         2. Verify target memory appears in results
         3. Extract exact ID from those results
         4. Only then call edit_memory()
+
+        Do not modify persistent flag unless explicitely requested.
         """
         mem = load_mem()
         content = _filter_memory_content(content)
@@ -197,6 +199,9 @@ def register_mcp(mcp):
             if memory.get("id") == id:
                 memory["content"] = content
                 mem[index] = memory
+                if persistent != None:
+                    mem["persistent"] = persistent
+
                 success = write_mem(mem)
                 return utils.result({"success": success, "id": id})
         
