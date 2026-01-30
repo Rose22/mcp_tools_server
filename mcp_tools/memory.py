@@ -43,7 +43,7 @@ def register_mcp(mcp):
         - Your own configuration/state information
 
         RETRIEVAL LOGIC:
-        1. ALL persistent memories are ALWAYS included (regardless of start date)
+        1. ALL persistent memories are ALWAYS included (regardless of how far back you recall)
         2. Non-persistent memories are filtered by date range
 
         Args:
@@ -53,12 +53,13 @@ def register_mcp(mcp):
                 if None, defaults to today.
 
         Examples:
-            - get_memories(30, None) → Last 30 days
+            - get_memories(30, 0) → Last 30 days
             - get_memories(30, 1) → Last 30 days up until yesterday
+            - get_memories(30, 7) → Last 30 days up until 7 days before today
             - get_memories(1, 1) → Only yesterday
-            - get_memories(365, 0) → Current year
+            - get_memories(365, 0) → A whole year up until today
+            - get_memories(730, 365) → Last year (start of last year up until end of last year)
             - get_memories(7, 7) → Exactly 7 days ago, without any other days included
-            - get_memories(None, None) → Last 30 days
         """
         mem = load_mem()
         mem_filtered = []
