@@ -27,7 +27,7 @@ def register_mcp(mcp):
             return False
 
     @mcp.tool
-    def get_memories(start_date: str = None, end_date: str = None):
+    def get_memories(from_days_ago: int = 30, to_days_ago: int = 0):
         """
         Retrieves memories from persistent memory storage. This is your ONLY source of past information - DO NOT assume you know anything from previous conversations unless you call this first.
 
@@ -47,22 +47,19 @@ def register_mcp(mcp):
         2. Non-persistent memories are filtered by date range
 
         Args:
-            start_date (str, optional): Start date in "YYYY-MM-DD" format.
-                If None, defaults to 30 days ago.
-            end_date (str, optional): End date in "YYYY-MM-DD" format.
-                If None, defaults to today.
+            from_days_ago (int, optional): Number of days to remember from, relative to today
+                if None, defaults to 30 days ago.
+            to_days_ago (int, optional): Number of days to remember up to, relative to today
+                if None, defaults to today.
+
+        Examples:
+            - get_memories(30, None) → Last 30 days
+            - get_memories(30, 1) → Last 30 days up until yesterday
+            - get_memories(1, 1) → Only yesterday
+            - get_memories(365, 0) → Current year
+            - get_memories(7, 7) → Exactly 7 days ago, without any other days included
+            - get_memories(None, None) → Last 30 days
         """
-        # Parse or default dates
-        if end_date is None:
-            end_date_obj = datetime.datetime.now()
-        else:
-            end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-        
-        if start_date is None:
-            start_date_obj = end_date_obj - datetime.timedelta(days=30)
-        else:
-            start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-        
         mem = load_mem()
         mem_filtered = []
         
@@ -77,7 +74,7 @@ def register_mcp(mcp):
             memory_date = datetime.datetime.strptime(
                 memory.get("date"), "%c"
             )
-            if start_date_obj <= memory_date <= end_date_obj:
+            if from_days_ago <= memory_date <= to_days_ago:
                 mem_filtered.append(memory)
         
         return utils.result(mem_filtered)
